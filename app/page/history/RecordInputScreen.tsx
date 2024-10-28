@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import {SafeAreaView} from "react-native-safe-area-context";
 
 const RecordInputScreen = () => {
   const [gymName, setGymName] = React.useState('');
@@ -8,7 +9,7 @@ const RecordInputScreen = () => {
   const [description, setDescription] = React.useState('');
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.headerText}>활동 기록 등록</Text>
 
       <TextInput
@@ -41,7 +42,7 @@ const RecordInputScreen = () => {
       <TouchableOpacity style={styles.submitButton}>
         <Text style={styles.submitButtonText}>등록</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 

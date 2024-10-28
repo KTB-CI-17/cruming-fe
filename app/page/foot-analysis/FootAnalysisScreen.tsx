@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {SafeAreaView} from "react-native-safe-area-context";
 
 const FootAnalysisScreen = () => {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.headerText}>족형 분석</Text>
-      
+
       <TouchableOpacity style={styles.imageUploadBox}>
         <Text>측면 사진 업로드</Text>
       </TouchableOpacity>
@@ -23,7 +24,7 @@ const FootAnalysisScreen = () => {
       <TouchableOpacity style={styles.submitButton}>
         <Text style={styles.submitButtonText}>암벽화 분석</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
