@@ -17,7 +17,7 @@ export default function TabLayout() {
                 headerShown: false,
             }}>
             <Tabs.Screen
-                name="MyPage"
+                name="MyPageTabs"
                 options={{
                     title: '내 정보',
                     tabBarIcon: ({ color }) => (
@@ -33,7 +33,7 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="HoldQuest"
+                name="HoldQuestTabs"
                 options={{
                     title: '문제 출제',
                     tabBarIcon: ({ color }) => (
@@ -65,7 +65,7 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="Community"
+                name="CommunityTabs"
                 options={{
                     title: '커뮤니티',
                     tabBarIcon: ({ color }) => (
@@ -81,7 +81,7 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="FootAnalysis"
+                name="FootAnalysisTabs"
                 options={{
                     title: '암벽화',
                     tabBarIcon: ({ color }) => (

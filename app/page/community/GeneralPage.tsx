@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import FloatingActionButton from '@/app/components/community/FloatingActionButton';
 import SearchBar from "@/app/components/common/SearchBar";
+import NewGeneralPage from "./NewGeneralPage";
 
 type PostItem = {
     id: number;
@@ -117,18 +117,15 @@ export default function GeneralPage() {
                     {dummyPosts.map(renderPostItem)}
                 </View>
             </ScrollView>
-            <FloatingActionButton />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
         backgroundColor: 'white',
     },
     scrollView: {
-        flex: 1,
     },
     postsContainer: {
         paddingHorizontal: 16,
