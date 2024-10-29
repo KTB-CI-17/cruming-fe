@@ -1,12 +1,11 @@
 import React, {useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Text} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import GeneralPage from "@/app/page/community/GeneralPage";
-import QuestionPage from "@/app/page/community/QuestionPage";
 import TimeLinePage from "@/app/page/community/TimeLinePage";
 import FloatingActionButton from "@/app/components/community/FloatingActionButton";
 import NewGeneralPage from "@/app/page/community/NewGeneralPage";
 import {useFocusEffect} from "@react-navigation/native";
+import PostCardList from "@/app/components/community/PostCardList";
 
 type TabType = '자유게시판' | '만든 문제' | '타임라인';
 
@@ -24,15 +23,16 @@ export default function CommunityTabs() {
         switch(selectedTab) {
             case '자유게시판':
                 return (<View>
-                    <GeneralPage />
+                     {/*TODO 카테고리 속성 넘겨서 PostCardList에서 조건에 맞게 API 조회할 수 있도록!*/}
+                    <PostCardList />
                     <FloatingActionButton onPress={() => setIsWriting(true)} />
                 </View>);
             case '만든 문제':
-                return <QuestionPage />;
+                return <PostCardList />;
             case '타임라인':
                 return <TimeLinePage />;
             default:
-                return <GeneralPage />;
+                return <PostCardList />;
         }
     };
 
