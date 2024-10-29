@@ -33,7 +33,7 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="Question"
+                name="HoldQuest"
                 options={{
                     title: '문제 출제',
                     tabBarIcon: ({ color }) => (

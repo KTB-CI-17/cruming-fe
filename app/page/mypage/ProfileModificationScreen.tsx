@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import {SafeAreaView} from "react-native-safe-area-context";
 
 const ProfileModificationScreen = () => {
   const [nickname, setNickname] = React.useState('');
@@ -8,7 +7,7 @@ const ProfileModificationScreen = () => {
   const [bio, setBio] = React.useState('');
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.headerText}>프로필 수정</Text>
 
       <View style={styles.profileImageContainer}>
@@ -43,7 +42,7 @@ const ProfileModificationScreen = () => {
       <TouchableOpacity style={styles.submitButton}>
         <Text style={styles.submitButtonText}>수정</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 };
 
