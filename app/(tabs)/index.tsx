@@ -3,23 +3,26 @@ import React, {useState} from "react";
 import CustomCalendar from "@/app/components/timeline/CustomCalendar";
 import FloatingActionButton from "@/app/components/community/FloatingActionButton";
 import {useFocusEffect} from "@react-navigation/native";
-import {SafeAreaView} from "react-native-safe-area-context";
+import TimelineWriteModal from "@/app/components/timeline/TimelineWriteModal";
 
 export default function Index() {
-    const [isWriting, setIsWriting] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(false);
 
     useFocusEffect(
         React.useCallback(() => {
-            setIsWriting(false);
+            setIsModalVisible(false);
         }, [])
     );
 
-    // 활동 날짜 리스트
+    // TODO: 활동 날짜 리스트 API 호출 후 연결
     const activeDates = [
-        '2024-11-04',
-        '2024-11-05',
-        '2024-11-06'
+        '2024-10-04',
+        '2024-10-05',
+        '2024-10-15'
     ];
+
+    // TODO: 타임라인 정보 리스트 API 호출 후 연결
+
 
     const activeMarkedDates = activeDates.reduce((acc, date) => ({
         ...acc,
@@ -35,12 +38,14 @@ export default function Index() {
 
     return (
         <View style={styles.container}>
-            <CustomCalendar
-                markedDates={activeMarkedDates}
+            <CustomCalendar markedDates={activeMarkedDates} />
+            <FloatingActionButton onPress={() => setIsModalVisible(true)} />
+            <TimelineWriteModal
+                visible={isModalVisible}
+                onClose={() => setIsModalVisible(false)}
             />
-            <FloatingActionButton onPress={() => setIsWriting(true)} />
         </View>
-    )
+    );
 }
 
 const styles = StyleSheet.create({

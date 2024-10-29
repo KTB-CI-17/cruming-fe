@@ -60,7 +60,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({ markedDates }) => {
                 textDisabledColor: '#E4E9F2',
 
                 // 요일 폰트 색상 변경 부분
-                textSectionTitleColor: '#FF6347',       // Sun, Mon, ..., Sat 색상
+                textSectionTitleColor: '#7B827E',       // Sun, Mon, ..., Sat 색상
                 textSectionTitleDisabledColor: '#D3D3D3', // 비활성화된 요일 색상
             }}
             enableSwipeMonths={true}
