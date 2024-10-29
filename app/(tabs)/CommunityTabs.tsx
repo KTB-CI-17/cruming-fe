@@ -6,12 +6,19 @@ import QuestionPage from "@/app/page/community/QuestionPage";
 import TimeLinePage from "@/app/page/community/TimeLinePage";
 import FloatingActionButton from "@/app/components/community/FloatingActionButton";
 import NewGeneralPage from "@/app/page/community/NewGeneralPage";
+import {useFocusEffect} from "@react-navigation/native";
 
 type TabType = '자유게시판' | '만든 문제' | '타임라인';
 
 export default function CommunityTabs() {
     const [selectedTab, setSelectedTab] = useState<TabType>('자유게시판');
     const [isWriting, setIsWriting] = useState(false);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            setIsWriting(false);
+        }, [])
+    );
 
     const renderContent = () => {
         switch(selectedTab) {
