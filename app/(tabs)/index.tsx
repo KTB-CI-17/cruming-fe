@@ -1,8 +1,9 @@
-import {View, StyleSheet, ScrollView} from "react-native";
-import React, {useState} from "react";
+import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
 import CustomCalendar from "@/app/components/timeline/CustomCalendar";
 import FloatingActionButton from "@/app/components/community/FloatingActionButton";
-import {useFocusEffect} from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import TimelineWriteModal from "@/app/components/timeline/TimelineWriteModal";
 import TimeLineCard from "@/app/components/common/TimeLineCard";
 
@@ -15,14 +16,12 @@ export default function Index() {
         }, [])
     );
 
-    // TODO: 활동 날짜 리스트 API 호출 후 연결
     const activeDates = [
         '2024-10-04',
         '2024-10-05',
         '2024-10-15'
     ];
 
-    // TODO: 타임라인 정보 리스트 API 호출 후 연결
     const dummyTimelinePosts = [
         {
             id: 1,
@@ -50,7 +49,6 @@ export default function Index() {
         },
     ];
 
-
     const activeMarkedDates = activeDates.reduce((acc, date) => ({
         ...acc,
         [date]: {
@@ -63,22 +61,33 @@ export default function Index() {
         }
     }), {});
 
+    const renderRightActions = () => (
+        <TouchableOpacity style={styles.deleteButton} onPress={() => console.log("Delete button pressed")}>
+            <Text style={styles.deleteButtonText}>삭제</Text>
+        </TouchableOpacity>
+    );
+
+    // @ts-ignore
     return (
-        <View style={styles.container}>
-            <ScrollView style={styles.scrollView}>
-                <CustomCalendar markedDates={activeMarkedDates} />
-                <View style={styles.cardsContainer}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <View style={styles.container}>
+                <ScrollView style={styles.scrollView}>
+                    <CustomCalendar markedDates={activeMarkedDates} />
                     {dummyTimelinePosts.map((post) => (
-                        <TimeLineCard key={post.id} post={post} />
+                        <Swipeable containerStyle={{margin: 0, padding: 0}} renderRightActions={renderRightActions}>
+                            <View style={styles.cardsContainer}>
+                                <TimeLineCard key={post.id} post={post} />
+                            </View>
+                        </Swipeable>
                     ))}
-                </View>
-            </ScrollView>
-            <FloatingActionButton onPress={() => setIsModalVisible(true)} />
-            <TimelineWriteModal
-                visible={isModalVisible}
-                onClose={() => setIsModalVisible(false)}
-            />
-        </View>
+                </ScrollView>
+                <FloatingActionButton onPress={() => setIsModalVisible(true)} />
+                <TimelineWriteModal
+                    visible={isModalVisible}
+                    onClose={() => setIsModalVisible(false)}
+                />
+            </View>
+        </GestureHandlerRootView>
     );
 }
 
@@ -86,12 +95,29 @@ const styles = StyleSheet.create({
     container: {
         paddingTop: 0,
         flex: 1,
+        paddingBottom: 0,
         backgroundColor: 'white',
     },
     scrollView: {
         flex: 1,
     },
     cardsContainer: {
-        padding: 16,
+        paddingTop: 16,
+        paddingHorizontal: 16,
+        paddingBottom: 0
+    },
+    deleteButton: {
+        backgroundColor: '#E31A1A',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 12,
+        width: 76,
+        margin: 16,
+        marginLeft: 0,
+        marginBottom: 20
+    },
+    deleteButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
     },
 });
