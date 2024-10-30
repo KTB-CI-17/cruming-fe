@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import FootAnalysisForm, { FormData } from './FootAnalysisForm';
 import ShoeCard from "@/components/foot-analysis/ShoeCard";
 
@@ -50,6 +51,14 @@ const dummyResults: ShoeData[] = [
 export default function FootAnalysisResult() {
     const [showResults, setShowResults] = useState(false);
     const [formData, setFormData] = useState<FormData | null>(null);
+
+    // Reset form when screen is focused
+    useFocusEffect(
+        React.useCallback(() => {
+            setShowResults(false);
+            setFormData(null);
+        }, [])
+    );
 
     const handleSubmit = (data: FormData) => {
         // Here you would normally make an API call

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image, Alert } from 'react-native';
 
 type OptionType = {
   id: string;
@@ -45,8 +45,8 @@ const Option = ({ selected, label, onPress }: {
 export default function FootAnalysisForm({ onSubmit }: FootAnalysisFormProps) {
   const [formData, setFormData] = useState<FormData>({
     shape: 'Roman',
-    type: '넓음',
-    level: '중급',
+    type: 'normal',
+    level: 'intermediate',
     footSize: '',
   });
 
@@ -69,9 +69,43 @@ export default function FootAnalysisForm({ onSubmit }: FootAnalysisFormProps) {
     { id: 'beginner', label: '초급' },
   ];
 
+  const validateFootSize = (size: string): boolean => {
+    // 숫자만 입력되었는지 확인
+    if (!/^\d+$/.test(size)) {
+      Alert.alert('입력 오류', '신발 사이즈는 숫자만 입력 가능합니다.');
+      return false;
+    }
+
+    // 5단위 확인
+    const sizeNum = parseInt(size, 10);
+    if (sizeNum % 5 !== 0) {
+      Alert.alert('입력 오류', '신발 사이즈는 5단위로 입력해주세요.\n(예: 230, 235, 240...)');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = () => {
+    if (!formData.footSize) {
+      Alert.alert('입력 오류', '신발 사이즈를 입력해주세요.');
+      return;
+    }
+
+    if (!validateFootSize(formData.footSize)) {
+      return;
+    }
+
     console.log('Form Data:', formData);
     onSubmit(formData);
+  };
+
+  const handleSizeChange = (value: string) => {
+    // 숫자가 아닌 문자 입력 방지
+    if (value && !/^\d+$/.test(value)) {
+      return;
+    }
+    setFormData({ ...formData, footSize: value });
   };
 
   return (
@@ -126,13 +160,17 @@ export default function FootAnalysisForm({ onSubmit }: FootAnalysisFormProps) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Size</Text>
-          <TextInput
-              style={styles.input}
-              placeholder="* 발 사이즈"
-              value={formData.footSize}
-              onChangeText={(value) => setFormData({ ...formData, footSize: value })}
-              keyboardType="numeric"
-          />
+          <View>
+            <TextInput
+                style={styles.input}
+                placeholder="* 발 사이즈 (예: 230, 235, 240...)"
+                value={formData.footSize}
+                onChangeText={handleSizeChange}
+                keyboardType="numeric"
+                maxLength={3}
+            />
+            <Text style={styles.helperText}>5단위로 입력해주세요</Text>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -146,6 +184,7 @@ export default function FootAnalysisForm({ onSubmit }: FootAnalysisFormProps) {
 }
 
 const styles = StyleSheet.create({
+  // 기존 스타일은 유지
   container: {
     flex: 1,
     padding: 20,
@@ -193,6 +232,12 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
   },
+  helperText: {
+    fontSize: 12,
+    color: '#8F9BB3',
+    marginTop: 4,
+    marginLeft: 4,
+  },
   submitButton: {
     backgroundColor: '#735BF2',
     padding: 16,
@@ -207,52 +252,6 @@ const styles = StyleSheet.create({
   },
   selectedOptionText: {
     color: 'white',
-  },
-  radioOuter: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E4E9F2',
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
-  },
-  selectedRadioOuter: {
-    borderColor: 'white',
-  },
-  radioInner: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  selectedRadioInner: {
-    backgroundColor: 'white',
-  },
-  unselectedRadioInner: {
-    backgroundColor: 'transparent',
-  },
-  radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E4E9F2',
-  },
-  selectedRadio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#735BF2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  innerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'white',
   },
   radioContainer: {
     flexDirection: 'row',
