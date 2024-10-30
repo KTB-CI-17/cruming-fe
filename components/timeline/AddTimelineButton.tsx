@@ -5,7 +5,7 @@ type Props = {
     onPress: () => void;
 };
 
-export default function FloatingActionButton({ onPress }: Props) {
+export default function AddTimelineButton({ onPress }: Props) {
     return (
         <TouchableOpacity
             style={styles.fab}

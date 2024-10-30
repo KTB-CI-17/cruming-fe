@@ -1,5 +1,5 @@
 import { View, StyleSheet, ScrollView } from "react-native";
-import TimeLineCard from "@/app/components/common/TimeLineCard";
+import TimeLineCard from "@/components/common/TimeLineCard";
 
 const dummyTimelinePosts = [
     {

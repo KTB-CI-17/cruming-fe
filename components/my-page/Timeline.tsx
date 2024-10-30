@@ -1,4 +1,4 @@
-import TimeLineCard from "@/app/components/common/TimeLineCard";
+import TimeLineCard from "@/components/common/TimeLineCard";
 import {StyleSheet, View} from "react-native";
 import React from "react";
 

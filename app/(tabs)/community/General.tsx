@@ -1,6 +1,6 @@
 import {View, StyleSheet, ScrollView, Text} from "react-native";
-import PostCard from "@/app/components/community/PostCard";
-import SearchBar from "@/app/components/common/SearchBar";
+import PostCard from "@/components/community/PostCard";
+import SearchBar from "@/components/common/SearchBar";
 import React from "react";
 import AddGeneral from "@/components/community/AddGeneralButton";
 

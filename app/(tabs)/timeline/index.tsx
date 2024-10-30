@@ -1,11 +1,11 @@
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { View, StyleSheet, ScrollView, Text, TouchableOpacity, Alert } from "react-native";
 import React, { useState } from "react";
-import CustomCalendar from "@/app/components/timeline/CustomCalendar";
-import FloatingActionButton from "@/app/components/community/FloatingActionButton";
+import CustomCalendar from "@/components/timeline/CustomCalendar";
+import AddTimelineButton from "@/components/timeline/AddTimelineButton";
 import { useFocusEffect } from "@react-navigation/native";
-import TimelineWriteModal from "@/app/components/timeline/TimelineWriteModal";
-import TimeLineCard from "@/app/components/common/TimeLineCard";
+import TimelineWriteModal from "@/components/timeline/TimelineWriteModal";
+import TimeLineCard from "@/components/common/TimeLineCard";
 
 export default function Index() {
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -164,7 +164,7 @@ export default function Index() {
                             </Swipeable>
                         ))}
                     </ScrollView>
-                    <FloatingActionButton onPress={() => setIsModalVisible(true)} />
+                    <AddTimelineButton onPress={() => setIsModalVisible(true)} />
                     <TimelineWriteModal
                         visible={isModalVisible}
                         onClose={() => setIsModalVisible(false)}
