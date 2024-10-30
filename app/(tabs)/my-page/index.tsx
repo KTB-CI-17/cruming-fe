@@ -1,9 +1,10 @@
 import React, {useEffect, useState} from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {View, Text, Image, TouchableOpacity, StyleSheet, ScrollView} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Timeline from "@/components/my-page/Timeline";
 
+// TODO: 로그인 기능 구현 후 프로필 수정/공유 영역과 설정 영역 노출 여부 체크 로직 구현
 interface UserProfile {
     nickname: string;      // 필수
     sns?: string;         // 선택
@@ -14,6 +15,8 @@ interface UserProfile {
     followers?: number;   // 선택
     following?: number;   // 선택
 }
+
+
 
 const dummyProfile: UserProfile = {
     nickname: "벽타는 낙타",
@@ -40,14 +43,7 @@ export default function MyPage() {
 
     useEffect(() => {
         // TODO: 실제 구현 시 사용자 ID 가져오기
-        const userId = "current-user-id";
 
-        // API 호출 시뮬레이션
-        console.log("Fetching profile for user:", userId);
-        // const loadProfile = async () => {
-        //     const data = await fetchUserProfile(userId);
-        //     setProfile(data);
-        // };
         // loadProfile();
     }, []);
 
@@ -60,98 +56,101 @@ export default function MyPage() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Settings 버튼 */}
-            <View style={styles.settingsButtonContainer}>
-                <TouchableOpacity onPress={() => router.navigate('/my-page/settings')}>
-                    <Ionicons name="settings-outline" size={24} color="#666" />
-                </TouchableOpacity>
-            </View>
-
-            {/* 프로필 기본 정보 (필수) */}
-            <View style={styles.profileSection}>
-                <View style={styles.profileImageContainer}>
-                    <Image
-                        source={require('@/assets/images/default-profile.png')}
-                        style={styles.profileImage}
-                    />
-                </View>
-                <Text style={styles.nickname}>{profile.nickname}</Text>
-
-                {/* SNS ID (선택) */}
-                {renderOptionalSection(
-                    profile.sns,
-                    <Text style={styles.username}>{profile.sns}</Text>
-                )}
-
-                {/* 신장/팔길이 정보 (항상 표시) */}
-                <View style={styles.infoContainer}>
-                    <View style={styles.infoItem}>
-                        <MaterialCommunityIcons name="human-male-height" size={18} color="black" />
-                        <Text style={styles.infoText}>키 : {formatMeasurement(profile.height)}</Text>
-                    </View>
-                    <View style={styles.infoItem}>
-                        <MaterialCommunityIcons name="arm-flex" size={18} color="black" />
-                        <Text style={styles.infoText}>팔 길이 : {formatMeasurement(profile.arm_reach)}</Text>
-                    </View>
-                </View>
-
-                {/* 체육관 정보 (선택) */}
-                {renderOptionalSection(
-                    profile.gym,
-                    <View style={styles.gymContainer}>
-                        <Ionicons name="location-outline" size={18} color="#666" />
-                        <Text style={styles.gymText}>{profile.gym}</Text>
-                    </View>
-                )}
-
-                {/* 팔로워/팔로잉 정보 (선택) */}
-                {renderOptionalSection(
-                    profile.followers !== undefined && profile.following !== undefined,
-                    <View style={styles.statsContainer}>
-                        <TouchableOpacity style={styles.statItem}>
-                            <View style={styles.statContent}>
-                                <Text style={styles.statLabel}>
-                                    팔로워 <Text style={styles.statNumber}>{profile.followers}</Text>
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                        <View style={styles.statDivider} />
-                        <TouchableOpacity style={styles.statItem}>
-                            <View style={styles.statContent}>
-                                <Text style={styles.statLabel}>
-                                    팔로잉 <Text style={styles.statNumber}>{profile.following}</Text>
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* 자기소개 (선택) */}
-                {renderOptionalSection(
-                    profile.info,
-                    <Text style={styles.description}>{profile.info}</Text>
-                )}
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={handleEditPress}
-                    >
-                        <Text style={styles.buttonText}>프로필 수정</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.button}>
-                        <Text style={styles.buttonText}>프로필 공유</Text>
+        <View style={styles.container}>
+            <ScrollView style={styles.scrollView}>
+                {/* Settings 버튼 */}
+                <View style={styles.settingsButtonContainer}>
+                    <TouchableOpacity onPress={() => router.navigate('/my-page/settings')}>
+                        <Ionicons name="settings-outline" size={24} color="#666" />
                     </TouchableOpacity>
                 </View>
-            </View>
-        </SafeAreaView>
+
+                {/* 프로필 기본 정보 (필수) */}
+                <View style={styles.profileSection}>
+                    <View style={styles.profileImageContainer}>
+                        <Image
+                            source={require('@/assets/images/default-profile.png')}
+                            style={styles.profileImage}
+                        />
+                    </View>
+                    <Text style={styles.nickname}>{profile.nickname}</Text>
+
+                    {/* SNS ID (선택) */}
+                    {renderOptionalSection(
+                        profile.sns,
+                        <Text style={styles.username}>{profile.sns}</Text>
+                    )}
+
+                    {/* 신장/팔길이 정보 (항상 표시) */}
+                    <View style={styles.infoContainer}>
+                        <View style={styles.infoItem}>
+                            <MaterialCommunityIcons name="human-male-height" size={18} color="black" />
+                            <Text style={styles.infoText}>키 : {formatMeasurement(profile.height)}</Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                            <MaterialCommunityIcons name="arm-flex" size={18} color="black" />
+                            <Text style={styles.infoText}>팔 길이 : {formatMeasurement(profile.arm_reach)}</Text>
+                        </View>
+                    </View>
+
+                    {/* 체육관 정보 (선택) */}
+                    {renderOptionalSection(
+                        profile.gym,
+                        <View style={styles.gymContainer}>
+                            <Ionicons name="location-outline" size={18} color="#666" />
+                            <Text style={styles.gymText}>{profile.gym}</Text>
+                        </View>
+                    )}
+
+                    {/* 팔로워/팔로잉 정보 (선택) */}
+                    {renderOptionalSection(
+                        profile.followers !== undefined && profile.following !== undefined,
+                        <View style={styles.statsContainer}>
+                            <TouchableOpacity style={styles.statItem}>
+                                <View style={styles.statContent}>
+                                    <Text style={styles.statLabel}>
+                                        팔로워 <Text style={styles.statNumber}>{profile.followers}</Text>
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                            <View style={styles.statDivider} />
+                            <TouchableOpacity style={styles.statItem}>
+                                <View style={styles.statContent}>
+                                    <Text style={styles.statLabel}>
+                                        팔로잉 <Text style={styles.statNumber}>{profile.following}</Text>
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {/* 자기소개 (선택) */}
+                    {renderOptionalSection(
+                        profile.info,
+                        <Text style={styles.description}>{profile.info}</Text>
+                    )}
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={handleEditPress}
+                        >
+                            <Text style={styles.buttonText}>프로필 수정</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.button}>
+                            <Text style={styles.buttonText}>프로필 공유</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <Timeline/>
+            </ScrollView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#ffffff',
     },
     settingsButtonContainer: {
         position: 'absolute',
@@ -166,7 +165,7 @@ const styles = StyleSheet.create({
         width: 120,
         height: 120,
         borderRadius: 50,
-        marginBottom: 16,
+        marginVertical: 16,
     },
     profileImage: {
         width: '100%',
@@ -250,6 +249,7 @@ const styles = StyleSheet.create({
     buttonContainer: {
         flexDirection: 'row',
         gap: 12,
+        paddingBottom: 30
     },
     button: {
         paddingVertical: 8,
@@ -260,5 +260,8 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: 14,
         color: '#333',
+    },
+    scrollView: {
+        flex: 1,
     },
 });
