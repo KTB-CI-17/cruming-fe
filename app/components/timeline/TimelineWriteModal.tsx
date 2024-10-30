@@ -18,17 +18,20 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
                         <Text style={styles.title}>활동 기록 등록</Text>
 
                         <View style={styles.inputContainer}>
+                             {/*TODO: 클릭 시 주소찾기 팝업이 출력되도록*/}
                             <TextInput
                                 style={styles.input}
                                 placeholder="* 위치"
                                 placeholderTextColor="#8F9BB3"
                             />
 
+                            {/*TODO: 클릭 시 달력 선택 팝업이 출력되도록*/}
                             <TouchableOpacity style={styles.input}>
                                 <Text style={styles.inputText}>* 활동 일자</Text>
                                 <Ionicons name="calendar-outline" size={20} color="#8F9BB3" />
                             </TouchableOpacity>
 
+                            {/*TODO: 클릭 시 색깔 선택 셀렉트 박스*/}
                             <TouchableOpacity style={styles.input}>
                                 <Text style={styles.inputText}>* Level</Text>
                                 <Ionicons name="chevron-down" size={20} color="#8F9BB3" />
@@ -42,12 +45,14 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
                                 numberOfLines={4}
                             />
 
+                            {/*TODO: 클릭 시 사진 업로드 가능하도록*/}
                             <TouchableOpacity style={styles.imageButton}>
                                 <Ionicons name="camera" size={24} color="#8F9BB3" />
                                 <Text style={styles.imageButtonText}>활동 사진</Text>
                             </TouchableOpacity>
                         </View>
 
+                        {/*TODO: 공개 범위 클릭 시 변경 가능 하도록*/}
                         <View style={styles.buttonContainer}>
                             <TouchableOpacity
                                 style={[styles.button, styles.selectedButton]}

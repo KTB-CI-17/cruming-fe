@@ -11,8 +11,8 @@ export default function SearchBar() {
     };
 
     const handleScreenTouch = () => {
-        Keyboard.dismiss();  // 키보드 닫기
-        setIsFocused(false); // 포커스 상태 해제
+        Keyboard.dismiss();
+        setIsFocused(false);
     };
 
     return (

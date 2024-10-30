@@ -31,7 +31,7 @@ const dummyTimelinePosts = [
     },
 ];
 
-export default function TimeLinePage() {
+export default function Timeline() {
     return (
         <View style={styles.container}>
             <ScrollView style={styles.scrollView}>

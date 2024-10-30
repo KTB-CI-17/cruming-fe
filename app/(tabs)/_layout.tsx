@@ -2,8 +2,6 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { Image } from "react-native";
 
-import { TabBarIcon } from '@/components/navigation/TabBarIcon';
-import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function TabLayout() {
@@ -17,7 +15,7 @@ export default function TabLayout() {
                 headerShown: false,
             }}>
             <Tabs.Screen
-                name="MyPageTabs"
+                name="my-page"
                 options={{
                     title: '내 정보',
                     tabBarIcon: ({ color }) => (
@@ -33,7 +31,7 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="HoldQuestTabs"
+                name="hold-quest"
                 options={{
                     title: '문제 출제',
                     tabBarIcon: ({ color }) => (
@@ -51,6 +49,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="index"
                 options={{
+                    href: null,
                     title: '타임라인',
                     tabBarIcon: ({ color }) => (
                         <Image
@@ -65,7 +64,23 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="CommunityTabs"
+                name="timeline"
+                options={{
+                    title: '타임라인',
+                    tabBarIcon: ({ color }) => (
+                        <Image
+                            source={require('../../assets/images/timeline-icon.png')}
+                            style={{
+                                width: 24,
+                                height: 24,
+                                tintColor: color
+                            }}
+                        />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="community"
                 options={{
                     title: '커뮤니티',
                     tabBarIcon: ({ color }) => (
@@ -80,8 +95,24 @@ export default function TabLayout() {
                     ),
                 }}
             />
+            {/*<Tabs.Screen*/}
+            {/*    name="community2"*/}
+            {/*    options={{*/}
+            {/*        title: '커뮤니티',*/}
+            {/*        tabBarIcon: ({ color }) => (*/}
+            {/*            <Image*/}
+            {/*                source={require('../../assets/images/community-icon.png')}*/}
+            {/*                style={{*/}
+            {/*                    width: 24,*/}
+            {/*                    height: 24,*/}
+            {/*                    tintColor: color*/}
+            {/*                }}*/}
+            {/*            />*/}
+            {/*        ),*/}
+            {/*    }}*/}
+            {/*/>*/}
             <Tabs.Screen
-                name="FootAnalysisTabs"
+                name="foot-analysis"
                 options={{
                     title: '암벽화',
                     tabBarIcon: ({ color }) => (
