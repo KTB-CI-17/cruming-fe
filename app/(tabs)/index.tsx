@@ -16,18 +16,12 @@ export default function Index() {
         }, [])
     );
 
-    const activeDates = [
-        '2024-10-04',
-        '2024-10-05',
-        '2024-10-15'
-    ];
-
     const dummyTimelinePosts = [
         {
             id: 1,
             title: "손상원 클라이밍 판교점",
             subtitle: "엄청 다이나믹한 암장이었다 (사실 이지 브로)",
-            date: "2024. 10. 04.",
+            date: "2024-10-04",
             imageUrl: require("@/assets/images/climbing.png"),
             color: '#735BF2'
         },
@@ -35,7 +29,7 @@ export default function Index() {
             id: 2,
             title: "손상원 클라이밍 판교점",
             subtitle: "오늘은 좀 힘들었다.",
-            date: "2024. 10. 05.",
+            date: "2024-10-05",
             imageUrl: require("@/assets/images/climbing.png"),
             color: '#E31A1A'
         },
@@ -43,15 +37,15 @@ export default function Index() {
             id: 3,
             title: "손상원 클라이밍 분당점",
             subtitle: "오늘은 아쉬웠다.",
-            date: "2024. 10. 15.",
+            date: "2024-10-15",
             imageUrl: require("@/assets/images/climbing.png"),
             color: '#E31A1A'
         },
     ];
 
-    const activeMarkedDates = activeDates.reduce((acc, date) => ({
+    const activeMarkedDates = dummyTimelinePosts.reduce((acc, post) => ({
         ...acc,
-        [date]: {
+        [post.date]: {
             customStyles: {
                 container: {
                     borderBottomWidth: 2,
@@ -62,21 +56,33 @@ export default function Index() {
     }), {});
 
     const renderRightActions = () => (
-        <TouchableOpacity style={styles.deleteButton} onPress={() => console.log("Delete button pressed")}>
+        <TouchableOpacity style={styles.deleteButton} onPress={() => alert("활동 기록을 삭제하시겠습니까?")}>
             <Text style={styles.deleteButtonText}>삭제</Text>
         </TouchableOpacity>
     );
 
-    // @ts-ignore
+    const formatDateForDisplay = (date: string) => {
+        return date.replace(/-/g, '. ') + '.';
+    };
+
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <View style={styles.container}>
                 <ScrollView style={styles.scrollView}>
                     <CustomCalendar markedDates={activeMarkedDates} />
                     {dummyTimelinePosts.map((post) => (
-                        <Swipeable containerStyle={{margin: 0, padding: 0}} renderRightActions={renderRightActions}>
+                        <Swipeable
+                            key={post.id}
+                            containerStyle={{margin: 0, padding: 0}}
+                            renderRightActions={renderRightActions}
+                        >
                             <View style={styles.cardsContainer}>
-                                <TimeLineCard key={post.id} post={post} />
+                                <TimeLineCard
+                                    post={{
+                                        ...post,
+                                        date: formatDateForDisplay(post.date) // 표시용 날짜 형식으로 변환
+                                    }}
+                                />
                             </View>
                         </Swipeable>
                     ))}

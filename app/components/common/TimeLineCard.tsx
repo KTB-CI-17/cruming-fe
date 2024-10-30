@@ -7,7 +7,7 @@ type TimelinePost = {
     title: string;
     subtitle: string;
     date: string;
-    author: string;
+    author?: string; // ?로 필수가 아닌 선택사항으로 받을 수 있다.
     imageUrl: ImageSourcePropType;
     color: string;
 };
