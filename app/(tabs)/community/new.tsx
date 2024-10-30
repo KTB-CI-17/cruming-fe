@@ -1,4 +1,3 @@
-// app/(tabs)/community/new.tsx
 import { useState } from 'react';
 import {
     View,
@@ -9,12 +8,15 @@ import {
     Image,
     StyleSheet,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    Alert
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 export default function NewPost() {
+    const navigation = useNavigation();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [images, setImages] = useState<string[]>([]);
@@ -37,6 +39,50 @@ export default function NewPost() {
         setImages(newImages);
     };
 
+    // 게시글 등록 함수
+    const handleSubmit = async () => {
+        if (!title.trim()) {
+            Alert.alert('알림', '제목을 입력해주세요.');
+            return;
+        }
+
+        if (!content.trim()) {
+            Alert.alert('알림', '내용을 입력해주세요.');
+            return;
+        }
+
+        Alert.alert(
+            '게시글 등록',
+            '게시글을 등록하시겠습니까?',
+            [
+                {
+                    text: '취소',
+                    style: 'cancel'
+                },
+                {
+                    text: '확인',
+                    onPress: async () => {
+                        try {
+                            // TODO: API 호출 구현
+
+                            // 더미 데이터로 작업 중이므로 API 호출 성공으로 가정
+                            Alert.alert('성공', '게시글이 등록되었습니다.', [
+                                {
+                                    text: '확인',
+                                    onPress: () => {
+                                        navigation.goBack();
+                                    }
+                                }
+                            ]);
+                        } catch (error) {
+                            Alert.alert('오류', '게시글 등록에 실패했습니다.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -54,10 +100,8 @@ export default function NewPost() {
                     />
                 </View>
 
-                {/* 구분선 */}
                 <View style={styles.divider} />
 
-                {/* 내용 입력 */}
                 <View style={styles.inputContainer}>
                     <TextInput
                         style={styles.contentInput}
@@ -70,17 +114,14 @@ export default function NewPost() {
                     />
                 </View>
 
-                {/* 구분선 */}
                 <View style={styles.divider} />
 
-                {/* 이미지 업로드 섹션 */}
                 <View style={styles.imageSection}>
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         style={styles.imageScrollView}
                     >
-                        {/* 이미지 추가 버튼 */}
                         {images.length < 10 && (
                             <TouchableOpacity
                                 style={styles.addImageButton}
@@ -93,7 +134,6 @@ export default function NewPost() {
                             </TouchableOpacity>
                         )}
 
-                        {/* 선택된 이미지들 */}
                         {images.map((uri, index) => (
                             <View key={index} style={styles.imageContainer}>
                                 <Image
@@ -111,6 +151,14 @@ export default function NewPost() {
                     </ScrollView>
                 </View>
             </ScrollView>
+
+            {/* 완료 버튼 추가 */}
+            <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleSubmit}
+            >
+                <Text style={styles.submitButtonText}>완료</Text>
+            </TouchableOpacity>
         </KeyboardAvoidingView>
     );
 }
@@ -136,12 +184,13 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#222B45',
         padding: 6,
-        minHeight: 360,
+        minHeight: 300,
     },
     divider: {
         height: 1,
         backgroundColor: '#E4E9F2',
-    },imageSection: {
+    },
+    imageSection: {
         padding: 12,
     },
     imageScrollView: {
@@ -157,7 +206,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
-        marginVertical: 8,     // 상하 마진 추가하여 이미지와 높이 맞춤
+        marginVertical: 8,
     },
     addImageText: {
         color: '#735BF2',
@@ -165,23 +214,36 @@ const styles = StyleSheet.create({
         fontSize: 12,
     },
     imageContainer: {
-        width: 100,            // 명시적 너비 지정
-        height: 100,           // 명시적 높이 지정
+        width: 100,
+        height: 100,
         marginRight: 12,
-        marginVertical: 8,     // 이미지 컨테이너도 동일한 상하 마진
+        marginVertical: 8,
         position: 'relative',
     },
     image: {
-        width: '100%',         // 부모 컨테이너에 맞춤
-        height: '100%',        // 부모 컨테이너에 맞춤
+        width: '100%',
+        height: '100%',
         borderRadius: 8,
     },
     removeButton: {
         position: 'absolute',
-        top: -8,               // 위치 미세 조정
-        right: -8,             // 위치 미세 조정
+        top: -8,
+        right: -8,
         backgroundColor: 'white',
         borderRadius: 12,
         zIndex: 1,
     },
+    // 완료 버튼 스타일 추가
+    submitButton: {
+        backgroundColor: '#735BF2',
+        padding: 16,
+        margin: 16,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    submitButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    }
 });
