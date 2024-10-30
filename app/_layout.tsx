@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
-import Header from "@/app/components/layout/Header";
+import CustomHeader from "@/components/CustomHeader";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,9 +27,12 @@ export default function RootLayout() {
         <SafeAreaProvider>
             <Stack
                 screenOptions={{
-                    header: () => <Header />,
                     contentStyle: { backgroundColor: 'white' },
                     headerShown: true,
+                    header: () => <CustomHeader />,
+                    headerStyle: {
+                        backgroundColor: 'transparent',
+                    }
                 }}
             >
                 <Stack.Screen name="(tabs)" />

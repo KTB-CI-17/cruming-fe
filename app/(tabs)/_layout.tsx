@@ -3,10 +3,9 @@ import React from 'react';
 import { Image } from "react-native";
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import {Ionicons} from "@expo/vector-icons";
 
 export default function TabLayout() {
-    const colorScheme = useColorScheme();
-
     return (
         <Tabs
             screenOptions={{
@@ -50,17 +49,6 @@ export default function TabLayout() {
                 name="index"
                 options={{
                     href: null,
-                    title: '타임라인',
-                    tabBarIcon: ({ color }) => (
-                        <Image
-                            source={require('../../assets/images/timeline-icon.png')}
-                            style={{
-                                width: 24,
-                                height: 24,
-                                tintColor: color
-                            }}
-                        />
-                    ),
                 }}
             />
             <Tabs.Screen
@@ -77,6 +65,16 @@ export default function TabLayout() {
                             }}
                         />
                     ),
+                    headerTitle: '홈',
+                    // 헤더 스타일
+                    headerStyle: {
+                        backgroundColor: '#ffffff',
+                    },
+                    // 헤더 타이틀 스타일
+                    headerTitleStyle: {
+                        fontWeight: 'bold',
+                        color: '#000000',
+                    },
                 }}
             />
             <Tabs.Screen
