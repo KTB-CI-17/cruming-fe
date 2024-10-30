@@ -1,18 +1,18 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface UserProfile {
-    nickname: string;
-    sns: string;
-    info: string;
-    height: number;
-    arm: string;
-    gym: string;
-    followers: number;
-    following: number;
+    nickname: string;      // 필수
+    sns?: string;         // 선택
+    info?: string;        // 선택
+    height?: number;      // 선택 (없으면 "-" 표시)
+    arm_reach?: number;         // 선택 (없으면 "-" 표시)
+    gym?: string;         // 선택
+    followers?: number;   // 선택
+    following?: number;   // 선택
 }
 
 const dummyProfile: UserProfile = {
@@ -20,13 +20,14 @@ const dummyProfile: UserProfile = {
     sns: "@_instangram_id",
     info: "안녕하세요. 초보 클라이머 낙타입니다!",
     height: 180,
-    arm: "-",
+    arm_reach: 20,
     gym: "손상원 클라이밍 판교점",
     followers: 1,
     following: 20,
 };
 
 export default function MyPage() {
+    const [profile, setProfile] = useState<UserProfile>(dummyProfile);
     const router = useRouter();
 
     const handleSettingsPress = () => {
@@ -37,17 +38,37 @@ export default function MyPage() {
         router.navigate('/my-page/edit');
     };
 
+    useEffect(() => {
+        // TODO: 실제 구현 시 사용자 ID 가져오기
+        const userId = "current-user-id";
+
+        // API 호출 시뮬레이션
+        console.log("Fetching profile for user:", userId);
+        // const loadProfile = async () => {
+        //     const data = await fetchUserProfile(userId);
+        //     setProfile(data);
+        // };
+        // loadProfile();
+    }, []);
+
+    const renderOptionalSection = (value: any, component: JSX.Element) => {
+        return value ? component : null;
+    };
+
+    const formatMeasurement = (value?: number) => {
+        return value ? `${value} cm` : "-";
+    };
+
     return (
         <SafeAreaView style={styles.container}>
+            {/* Settings 버튼 */}
             <View style={styles.settingsButtonContainer}>
-                <TouchableOpacity
-                    style={styles.settingsButton}
-                    onPress={handleSettingsPress}
-                >
+                <TouchableOpacity onPress={() => router.navigate('/my-page/settings')}>
                     <Ionicons name="settings-outline" size={24} color="#666" />
                 </TouchableOpacity>
             </View>
 
+            {/* 프로필 기본 정보 (필수) */}
             <View style={styles.profileSection}>
                 <View style={styles.profileImageContainer}>
                     <Image
@@ -55,39 +76,62 @@ export default function MyPage() {
                         style={styles.profileImage}
                     />
                 </View>
-                <Text style={styles.nickname}>{dummyProfile.nickname}</Text>
-                <Text style={styles.username}>{dummyProfile.sns}</Text>
+                <Text style={styles.nickname}>{profile.nickname}</Text>
 
+                {/* SNS ID (선택) */}
+                {renderOptionalSection(
+                    profile.sns,
+                    <Text style={styles.username}>{profile.sns}</Text>
+                )}
+
+                {/* 신장/팔길이 정보 (항상 표시) */}
                 <View style={styles.infoContainer}>
                     <View style={styles.infoItem}>
-                        <MaterialCommunityIcons name="human-male-height" size={20} color="#666" />
-                        <Text style={styles.infoText}>키 : {dummyProfile.height}</Text>
+                        <MaterialCommunityIcons name="human-male-height" size={18} color="black" />
+                        <Text style={styles.infoText}>키 : {formatMeasurement(profile.height)}</Text>
                     </View>
                     <View style={styles.infoItem}>
-                        <FontAwesome5 name="ruler-horizontal" size={16} color="#666" />
-                        <Text style={styles.infoText}>팔 : {dummyProfile.arm}</Text>
+                        <MaterialCommunityIcons name="arm-flex" size={18} color="black" />
+                        <Text style={styles.infoText}>팔 길이 : {formatMeasurement(profile.arm_reach)}</Text>
                     </View>
                 </View>
 
-                <View style={styles.gymContainer}>
-                    <Ionicons name="location-outline" size={20} color="#666" />
-                    <Text style={styles.gymText}>{dummyProfile.gym}</Text>
-                </View>
-
-                <View style={styles.statsContainer}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{dummyProfile.followers}</Text>
-                        <Text style={styles.statLabel}>팔로워</Text>
+                {/* 체육관 정보 (선택) */}
+                {renderOptionalSection(
+                    profile.gym,
+                    <View style={styles.gymContainer}>
+                        <Ionicons name="location-outline" size={18} color="#666" />
+                        <Text style={styles.gymText}>{profile.gym}</Text>
                     </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{dummyProfile.following}</Text>
-                        <Text style={styles.statLabel}>팔로잉</Text>
+                )}
+
+                {/* 팔로워/팔로잉 정보 (선택) */}
+                {renderOptionalSection(
+                    profile.followers !== undefined && profile.following !== undefined,
+                    <View style={styles.statsContainer}>
+                        <TouchableOpacity style={styles.statItem}>
+                            <View style={styles.statContent}>
+                                <Text style={styles.statLabel}>
+                                    팔로워 <Text style={styles.statNumber}>{profile.followers}</Text>
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                        <View style={styles.statDivider} />
+                        <TouchableOpacity style={styles.statItem}>
+                            <View style={styles.statContent}>
+                                <Text style={styles.statLabel}>
+                                    팔로잉 <Text style={styles.statNumber}>{profile.following}</Text>
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
                     </View>
-                </View>
+                )}
 
-                <Text style={styles.description}>{dummyProfile.info}</Text>
-
+                {/* 자기소개 (선택) */}
+                {renderOptionalSection(
+                    profile.info,
+                    <Text style={styles.description}>{profile.info}</Text>
+                )}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
                         style={styles.button}
@@ -115,22 +159,14 @@ const styles = StyleSheet.create({
         right: 16,
         zIndex: 1,
     },
-    settingsButton: {
-        padding: 8,
-    },
     profileSection: {
         alignItems: 'center',
-        paddingTop: 20,
     },
     profileImageContainer: {
-        width: 100,
-        height: 100,
+        width: 120,
+        height: 120,
         borderRadius: 50,
-        backgroundColor: '#E8E6FF',
-        justifyContent: 'center',
-        alignItems: 'center',
         marginBottom: 16,
-        overflow: 'hidden',
     },
     profileImage: {
         width: '100%',
@@ -165,7 +201,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        marginBottom: 16,
+        marginBottom: 5,
     },
     gymText: {
         fontSize: 14,
@@ -174,25 +210,35 @@ const styles = StyleSheet.create({
     statsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 5,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 8,
+        padding: 4,
+        width: 'auto',
     },
     statItem: {
         alignItems: 'center',
-        paddingHorizontal: 20,
+        paddingVertical: 4,
+        paddingHorizontal: 16,
+        minWidth: 80,
     },
-    statNumber: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 4,
+    statContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     statLabel: {
         fontSize: 14,
         color: '#666',
     },
+    statNumber: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#333',
+    },
     statDivider: {
         width: 1,
-        height: 24,
-        backgroundColor: '#eee',
+        height: '80%',
+        backgroundColor: '#e0e0e0',
     },
     description: {
         fontSize: 14,
@@ -207,7 +253,7 @@ const styles = StyleSheet.create({
     },
     button: {
         paddingVertical: 8,
-        paddingHorizontal: 16,
+        paddingHorizontal: 35,
         borderRadius: 8,
         backgroundColor: '#f5f5f5',
     },
