@@ -26,17 +26,6 @@ export default function CommunityLayout() {
                             fontSize: 18,                    // 헤더 제목 크기
                             fontWeight: '600',              // 헤더 제목 굵기
                         },
-                        // 오른쪽 제출 버튼 추가
-                        headerRight: () => (
-                            <TouchableOpacity
-                                onPress={() => {
-                                    // 여기에 제출 로직 추가
-                                    console.log('제출 버튼 클릭');
-                                }}
-                            >
-                                <Text style={styles.submitText}>완료</Text>
-                            </TouchableOpacity>
-                        ),
                     }}
                 />
             </Stack>
