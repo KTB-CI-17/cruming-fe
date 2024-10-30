@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, ScrollView } from 'react-native';
-import FootAnalysisForm from './FootAnalysisForm';
-import ShoeCard from "@/app/page/foot-analysis/ShoeCard";
+import FootAnalysisForm, { FormData } from './FootAnalysisForm';
+import ShoeCard from "@/components/foot-analysis/ShoeCard";
 
 type ShoeData = {
     id: number;
@@ -47,14 +47,19 @@ const dummyResults: ShoeData[] = [
     },
 ];
 
-export default function FootAnalysisPage() {
+export default function FootAnalysisResult() {
     const [showResults, setShowResults] = useState(false);
+    const [formData, setFormData] = useState<FormData | null>(null);
 
-    const handleSubmit = () => {
+    const handleSubmit = (data: FormData) => {
+        // Here you would normally make an API call
+        // const response = await api.post('/recommend-shoes', data);
+        console.log('Submitted form data:', data);
+        setFormData(data);
         setShowResults(true);
     };
 
-    if (showResults) {
+    if (showResults && formData) {
         return (
             <ScrollView style={styles.container}>
                 {dummyResults.map((shoe) => (

@@ -1,4 +1,3 @@
-// page/foot-analysis/FootAnalysisForm.tsx
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image } from 'react-native';
 
@@ -7,8 +6,15 @@ type OptionType = {
   label: string;
 };
 
+export type FormData = {
+  shape: string;
+  type: string;
+  level: string;
+  footSize: string;
+};
+
 type FootAnalysisFormProps = {
-  onSubmit: () => void;
+  onSubmit: (data: FormData) => void;
 };
 
 const Option = ({ selected, label, onPress }: {
@@ -37,10 +43,12 @@ const Option = ({ selected, label, onPress }: {
 );
 
 export default function FootAnalysisForm({ onSubmit }: FootAnalysisFormProps) {
-  const [selectedShape, setSelectedShape] = useState<string>('Roman');
-  const [selectedType, setSelectedType] = useState<string>('넓음');
-  const [selectedLevel, setSelectedLevel] = useState<string>('중급');
-  const [footSize, setFootSize] = useState<string>('');
+  const [formData, setFormData] = useState<FormData>({
+    shape: 'Roman',
+    type: '넓음',
+    level: '중급',
+    footSize: '',
+  });
 
   const shapeOptions: OptionType[] = [
     { id: 'Egyptian', label: 'Egyptian' },
@@ -62,7 +70,8 @@ export default function FootAnalysisForm({ onSubmit }: FootAnalysisFormProps) {
   ];
 
   const handleSubmit = () => {
-    onSubmit();
+    console.log('Form Data:', formData);
+    onSubmit(formData);
   };
 
   return (
@@ -79,9 +88,9 @@ export default function FootAnalysisForm({ onSubmit }: FootAnalysisFormProps) {
             {shapeOptions.map((option) => (
                 <Option
                     key={option.id}
-                    selected={selectedShape === option.id}
+                    selected={formData.shape === option.id}
                     label={option.label}
-                    onPress={() => setSelectedShape(option.id)}
+                    onPress={() => setFormData({ ...formData, shape: option.id })}
                 />
             ))}
           </View>
@@ -93,9 +102,9 @@ export default function FootAnalysisForm({ onSubmit }: FootAnalysisFormProps) {
             {typeOptions.map((option) => (
                 <Option
                     key={option.id}
-                    selected={selectedType === option.id}
+                    selected={formData.type === option.id}
                     label={option.label}
-                    onPress={() => setSelectedType(option.id)}
+                    onPress={() => setFormData({ ...formData, type: option.id })}
                 />
             ))}
           </View>
@@ -107,9 +116,9 @@ export default function FootAnalysisForm({ onSubmit }: FootAnalysisFormProps) {
             {levelOptions.map((option) => (
                 <Option
                     key={option.id}
-                    selected={selectedLevel === option.id}
+                    selected={formData.level === option.id}
                     label={option.label}
-                    onPress={() => setSelectedLevel(option.id)}
+                    onPress={() => setFormData({ ...formData, level: option.id })}
                 />
             ))}
           </View>
@@ -120,8 +129,8 @@ export default function FootAnalysisForm({ onSubmit }: FootAnalysisFormProps) {
           <TextInput
               style={styles.input}
               placeholder="* 발 사이즈"
-              value={footSize}
-              onChangeText={setFootSize}
+              value={formData.footSize}
+              onChangeText={(value) => setFormData({ ...formData, footSize: value })}
               keyboardType="numeric"
           />
         </View>

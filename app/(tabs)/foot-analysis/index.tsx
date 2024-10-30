@@ -1,13 +1,13 @@
 import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import FootAnalysisPage from "@/app/page/foot-analysis/FootAnalysisResult";
+import FootAnalysisResult from "@/components/foot-analysis/FootAnalysisResult";
 
 export default function FootAnalysis() {
     return (
         <SafeAreaView edges={['bottom']} style={styles.safeArea}>
             <View style={styles.container}>
-                <FootAnalysisPage />
+                <FootAnalysisResult />
             </View>
         </SafeAreaView>
     )
