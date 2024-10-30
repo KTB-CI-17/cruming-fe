@@ -1,5 +1,6 @@
-import {StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
+import { useRouter } from 'expo-router';
 
 type PostCard = {
     id: number;
@@ -7,17 +8,30 @@ type PostCard = {
     date: string;
     isNew?: boolean;
     isHot?: boolean;
+    category?: string; // 카테고리 추가 (선택적)
 }
 
 type PostCardProps = {
-    post: PostCard
+    post: PostCard;
 }
-export default function PostCard({post}:PostCardProps) {
+
+export default function PostCard({ post }: PostCardProps) {
+    const router = useRouter();
+
+    const handlePress = () => {
+        // 방법 1: category가 고정값인 경우
+        router.push(`/community/general/${post.id}`);
+
+        // 방법 2: category가 동적인 경우
+        // router.push(`/community/${post.category || 'general'}/${post.id}`);
+    };
+
     return (
         <TouchableOpacity
             key={post.id}
             style={styles.postItem}
-            onPress={() => {/* 게시글 상세페이지로 이동 */}}
+            onPress={handlePress}
+            activeOpacity={0.7}
         >
             <View style={styles.postContent}>
                 <View style={styles.titleContainer}>
@@ -31,13 +45,14 @@ export default function PostCard({post}:PostCardProps) {
                             <Text style={styles.newBadgeText}>NEW</Text>
                         </View>
                     )}
-                    <Text style={styles.title}>{post.title}</Text>
+                    <Text style={styles.title} numberOfLines={1}>{post.title}</Text>
                 </View>
                 <Text style={styles.date}>{post.date}</Text>
             </View>
         </TouchableOpacity>
-    )
-};
+    );
+}
+
 
 const styles = StyleSheet.create({
     container: {
