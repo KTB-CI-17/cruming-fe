@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, ScrollView, View, TouchableOpacity, Text } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import FootAnalysisForm, { FormData } from './FootAnalysisForm';
 import ShoeCard from "@/components/foot-analysis/ShoeCard";
@@ -52,7 +52,6 @@ export default function FootAnalysisResult() {
     const [showResults, setShowResults] = useState(false);
     const [formData, setFormData] = useState<FormData | null>(null);
 
-    // Reset form when screen is focused
     useFocusEffect(
         React.useCallback(() => {
             setShowResults(false);
@@ -61,26 +60,46 @@ export default function FootAnalysisResult() {
     );
 
     const handleSubmit = (data: FormData) => {
-        // Here you would normally make an API call
-        // const response = await api.post('/recommend-shoes', data);
         console.log('Submitted form data:', data);
         setFormData(data);
         setShowResults(true);
     };
 
+    const handleReset = () => {
+        setShowResults(false);
+        setFormData(null);
+    };
+
     if (showResults && formData) {
         return (
-            <ScrollView style={styles.container}>
-                {dummyResults.map((shoe) => (
-                    <ShoeCard
-                        key={shoe.id}
-                        modelName={shoe.modelName}
-                        size={shoe.size}
-                        productUrl={shoe.productUrl}
-                        imageUrl={shoe.imageUrl}
-                    />
-                ))}
-            </ScrollView>
+            <View style={styles.container}>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={styles.cardsContainer}>
+                        {dummyResults.map((shoe) => (
+                            <ShoeCard
+                                key={shoe.id}
+                                modelName={shoe.modelName}
+                                size={shoe.size}
+                                productUrl={shoe.productUrl}
+                                imageUrl={shoe.imageUrl}
+                            />
+                        ))}
+                    </View>
+                </ScrollView>
+
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                        style={styles.submitButton}
+                        onPress={handleReset}
+                    >
+                        <Text style={styles.submitButtonText}>다시 검색하기</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
         );
     }
 
@@ -92,6 +111,31 @@ export default function FootAnalysisResult() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: 'white',
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+    },
+    cardsContainer: {
         padding: 20,
+        paddingBottom: 0,
+    },
+    buttonContainer: {
+        padding: 20,
+        backgroundColor: 'white',
+    },
+    submitButton: {
+        backgroundColor: '#735BF2',
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    submitButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
