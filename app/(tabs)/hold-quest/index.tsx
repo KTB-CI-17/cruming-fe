@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
-import HoldAnalysisLoading from "@/app/page/hold-quest/HoldAnalysisLoading";
+import HoldAnalysisLoading from "@/components/problems/HoldAnalysisLoading";
 
 export default function HoldQuest() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
