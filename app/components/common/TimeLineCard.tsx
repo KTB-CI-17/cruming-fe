@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ImageSourcePropType } from 'react-native';
+import { useRouter } from 'expo-router';
 import Dot from './Dot';
 
 type TimelinePost = {
@@ -7,7 +8,7 @@ type TimelinePost = {
     title: string;
     subtitle: string;
     date: string;
-    author?: string; // ?로 필수가 아닌 선택사항으로 받을 수 있다.
+    author?: string;
     imageUrl: ImageSourcePropType;
     color: string;
 };
@@ -17,14 +18,24 @@ type TimeLineCardProps = {
 };
 
 export default function TimeLineCard({ post }: TimeLineCardProps) {
+    const router = useRouter();
+
+    const handlePress = () => {
+        router.push(`/timeline/${post.id}`);
+    };
+
     return (
-        <TouchableOpacity style={styles.postCard} onPress={() => {}}>
+        <TouchableOpacity
+            style={styles.postCard}
+            onPress={handlePress}
+            activeOpacity={0.7}
+        >
             <View style={styles.postHeader}>
                 <View style={styles.dateContainer}>
                     <Dot color={post.color} />
                     <Text style={styles.date}>{post.date}</Text>
                 </View>
-                <Text style={styles.author}>{post.author}</Text>
+                {post.author && <Text style={styles.author}>{post.author}</Text>}
             </View>
             <View style={styles.textContainer}>
                 <Text style={styles.title}>{post.title}</Text>
