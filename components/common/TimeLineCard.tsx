@@ -17,19 +17,32 @@ type TimelinePost = {
 
 type TimeLineCardProps = {
     post: TimelinePost;
-    onOptionsPress: () => void;
+    onOptionsPress?: () => void;  // 선택적 props
+    showOptions?: boolean;        // 선택적 props
+    onPress?: () => void;         // 선택적 props - 커스텀 클릭 핸들러
+    containerStyle?: object;      // 선택적 props - 추가 스타일
 };
 
-export default function TimeLineCard({ post, onOptionsPress }: TimeLineCardProps) {
+export default function TimelineCard({
+                                         post,
+                                         onOptionsPress,
+                                         showOptions = false,  // 기본값 false
+                                         onPress,
+                                         containerStyle
+                                     }: TimeLineCardProps) {
     const router = useRouter();
 
     const handlePress = () => {
-        router.push(`/timeline/${post.id}`);
+        if (onPress) {
+            onPress();
+        } else {
+            router.push(`/timeline/${post.id}`);
+        }
     };
 
     return (
         <TouchableOpacity
-            style={styles.postCard}
+            style={[styles.postCard, containerStyle]}
             onPress={handlePress}
             activeOpacity={0.7}
         >
@@ -38,19 +51,25 @@ export default function TimeLineCard({ post, onOptionsPress }: TimeLineCardProps
                     <Dot color={post.color} />
                     <Text style={styles.date}>{post.date}</Text>
                 </View>
-                <TouchableOpacity
-                    onPress={(e) => {
-                        e.stopPropagation();
-                        onOptionsPress();
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                    <MoreVertical size={20} color="#8F9BB3" />
-                </TouchableOpacity>
+                {showOptions && onOptionsPress && (
+                    <TouchableOpacity
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            onOptionsPress();
+                        }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <MoreVertical size={20} color="#8F9BB3" />
+                    </TouchableOpacity>
+                )}
             </View>
             <View style={styles.textContainer}>
-                <Text style={styles.title}>{post.title}</Text>
-                <Text style={styles.subtitle}>{post.subtitle}</Text>
+                <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+                    {post.title}
+                </Text>
+                <Text style={styles.subtitle} numberOfLines={2} ellipsizeMode="tail">
+                    {post.subtitle}
+                </Text>
             </View>
             <Image
                 source={post.imageUrl}
