@@ -3,22 +3,24 @@ import {View, Text, Image, TouchableOpacity, StyleSheet, ScrollView} from 'react
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Timeline from "@/components/my-page/Timeline";
+import FollowButton from '@/components/my-page/FollowButton';
 
-// TODO: 로그인 기능 구현 후 프로필 수정/공유 영역과 설정 영역 노출 여부 체크 로직 구현
 interface UserProfile {
-    nickname: string;      // 필수
-    sns?: string;         // 선택
-    info?: string;        // 선택
-    height?: number;      // 선택 (없으면 "-" 표시)
-    arm_reach?: number;         // 선택 (없으면 "-" 표시)
-    gym?: string;         // 선택
-    followers?: number;   // 선택
-    following?: number;   // 선택
+    id: string;
+    nickname: string;
+    sns?: string;
+    info?: string;
+    height?: number;
+    arm_reach?: number;
+    gym?: string;
+    followers?: number;
+    following?: number;
+    isSelf?: boolean;
+    isFollowing?: boolean;
 }
 
-
-
 const dummyProfile: UserProfile = {
+    id: '123',
     nickname: "벽타는 낙타",
     sns: "@_instangram_id",
     info: "안녕하세요. 초보 클라이머 낙타입니다!",
@@ -27,6 +29,8 @@ const dummyProfile: UserProfile = {
     gym: "손상원 클라이밍 판교점",
     followers: 1,
     following: 20,
+    isSelf: false,
+    isFollowing: true,
 };
 
 export default function MyPage() {
@@ -41,11 +45,20 @@ export default function MyPage() {
         router.navigate('/my-page/edit');
     };
 
-    useEffect(() => {
-        // TODO: 실제 구현 시 사용자 ID 가져오기
+    const handleFollowStatusChange = (isFollowing: boolean) => {
+        setProfile(prev => ({
+            ...prev,
+            followers: isFollowing ? (prev.followers || 0) + 1 : (prev.followers || 0) - 1
+        }));
+    };
 
-        // loadProfile();
+    useEffect(() => {
+        fetchProfile();
     }, []);
+
+    const fetchProfile = async () => {
+        setProfile(dummyProfile);
+    };
 
     const renderOptionalSection = (value: any, component: JSX.Element) => {
         return value ? component : null;
@@ -55,17 +68,45 @@ export default function MyPage() {
         return value ? `${value} cm` : "-";
     };
 
+    // my-page/index.tsx의 renderFollowButton 함수만 수정
+
+    const renderFollowButton = () => {
+        if (!profile.isSelf) {
+            return (
+                <View style={styles.buttonContainer}>
+                    <FollowButton
+                        initialIsFollowing={profile.isFollowing || false}
+                        userId={profile.id}
+                        onFollowStatusChange={handleFollowStatusChange}
+                    />
+                </View>
+            );
+        }
+
+        return (
+            <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleEditPress}
+                >
+                    <Text style={styles.buttonText}>프로필 수정</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button}>
+                    <Text style={styles.buttonText}>프로필 공유</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
     return (
         <View style={styles.container}>
             <ScrollView style={styles.scrollView}>
-                {/* Settings 버튼 */}
                 <View style={styles.settingsButtonContainer}>
-                    <TouchableOpacity onPress={() => router.navigate('/my-page/settings')}>
+                    <TouchableOpacity onPress={handleSettingsPress}>
                         <Ionicons name="settings-outline" size={24} color="#666" />
                     </TouchableOpacity>
                 </View>
 
-                {/* 프로필 기본 정보 (필수) */}
                 <View style={styles.profileSection}>
                     <View style={styles.profileImageContainer}>
                         <Image
@@ -75,13 +116,11 @@ export default function MyPage() {
                     </View>
                     <Text style={styles.nickname}>{profile.nickname}</Text>
 
-                    {/* SNS ID (선택) */}
                     {renderOptionalSection(
                         profile.sns,
                         <Text style={styles.username}>{profile.sns}</Text>
                     )}
 
-                    {/* 신장/팔길이 정보 (항상 표시) */}
                     <View style={styles.infoContainer}>
                         <View style={styles.infoItem}>
                             <MaterialCommunityIcons name="human-male-height" size={18} color="black" />
@@ -93,7 +132,6 @@ export default function MyPage() {
                         </View>
                     </View>
 
-                    {/* 체육관 정보 (선택) */}
                     {renderOptionalSection(
                         profile.gym,
                         <View style={styles.gymContainer}>
@@ -102,7 +140,6 @@ export default function MyPage() {
                         </View>
                     )}
 
-                    {/* 팔로워/팔로잉 정보 (선택) */}
                     {renderOptionalSection(
                         profile.followers !== undefined && profile.following !== undefined,
                         <View style={styles.statsContainer}>
@@ -124,24 +161,15 @@ export default function MyPage() {
                         </View>
                     )}
 
-                    {/* 자기소개 (선택) */}
                     {renderOptionalSection(
                         profile.info,
                         <Text style={styles.description}>{profile.info}</Text>
                     )}
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity
-                            style={styles.button}
-                            onPress={handleEditPress}
-                        >
-                            <Text style={styles.buttonText}>프로필 수정</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.button}>
-                            <Text style={styles.buttonText}>프로필 공유</Text>
-                        </TouchableOpacity>
-                    </View>
+
+                    {renderFollowButton()}
                 </View>
-                <Timeline/>
+
+                <Timeline />
             </ScrollView>
         </View>
     );

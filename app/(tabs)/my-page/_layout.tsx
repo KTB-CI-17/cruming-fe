@@ -1,5 +1,4 @@
 import { Stack } from 'expo-router';
-import {black} from "colorette";
 
 export default function MyPageLayout() {
     return (
