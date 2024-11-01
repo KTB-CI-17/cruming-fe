@@ -14,8 +14,9 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { X } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import ImageUploadArea from '../../components/common/ImageUploadArea';
-import PostAddInfoArea from '../../components/common/PostAddInfoArea';
+import LocationSearchArea from '../../components/common/LocationSearchArea';
 
 type TimelineWriteModalProps = {
     visible: boolean;
@@ -41,6 +42,46 @@ const initialFormData: TimelineFormData = {
     images: [],
     privacy: '전체 공개'
 };
+
+interface FormInputProps {
+    value: string;
+    placeholder: string;
+    onChangeText?: (text: string) => void;
+    onPress?: () => void;
+    iconName?: keyof typeof Ionicons.glyphMap;
+    editable?: boolean;
+}
+
+function FormInput({
+                       value,
+                       placeholder,
+                       onChangeText,
+                       onPress,
+                       iconName,
+                       editable = true
+                   }: FormInputProps) {
+    if (onPress) {
+        return (
+            <TouchableOpacity style={styles.input} onPress={onPress}>
+                <Text style={[styles.inputText, value ? styles.filledInput : {}]}>
+                    {value || placeholder}
+                </Text>
+                {iconName && <Ionicons name={iconName} size={20} color="#8F9BB3" />}
+            </TouchableOpacity>
+        );
+    }
+
+    return (
+        <TextInput
+            style={styles.input}
+            placeholder={placeholder}
+            placeholderTextColor="#8F9BB3"
+            value={value}
+            onChangeText={onChangeText}
+            editable={editable}
+        />
+    );
+}
 
 export default function TimelineWriteModal({ visible, onClose }: TimelineWriteModalProps) {
     const [modalVisible, setModalVisible] = useState(visible);
@@ -169,6 +210,10 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
         closeWithAnimation(() => onClose());
     };
 
+    const handleLocationSelect = (location: string) => {
+        handleInputChange('location', location);
+    };
+
     return (
         <Modal transparent visible={modalVisible} animationType="none" onRequestClose={handleCloseAttempt}>
             <Animated.View
@@ -217,20 +262,19 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
 
                                 <ScrollView style={styles.scrollContainer}>
                                     <View style={styles.inputContainer}>
-                                        <PostAddInfoArea
+                                        <LocationSearchArea
                                             value={formData.location}
-                                            placeholder="* 위치"
-                                            onChangeText={(text) => handleInputChange('location', text)}
+                                            onLocationSelect={handleLocationSelect}
                                         />
 
-                                        <PostAddInfoArea
+                                        <FormInput
                                             value={formData.activityDate}
                                             placeholder="* 활동 일자"
                                             onPress={handleDateSelect}
                                             iconName="calendar-outline"
                                         />
 
-                                        <PostAddInfoArea
+                                        <FormInput
                                             value={formData.level}
                                             placeholder="* Level"
                                             onPress={handleLevelSelect}
@@ -289,7 +333,6 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
     );
 }
 
-
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
@@ -315,7 +358,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        position: 'relative',  // 상대 위치 설정으로 closeButton의 absolute 포지셔닝의 기준점이 됨
+        position: 'relative',
     },
     title: {
         fontSize: 18,
@@ -325,7 +368,7 @@ const styles = StyleSheet.create({
     closeButton: {
         position: 'absolute',
         right: 0,
-        padding: 4,  // 터치 영역을 좀 더 크게 만듦
+        padding: 4,
     },
     scrollContainer: {
         flex: 1,
@@ -342,6 +385,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+    },
+    inputText: {
+        color: '#8F9BB3',
+    },
+    filledInput: {
+        color: '#000',
     },
     multilineInput: {
         height: 150,
