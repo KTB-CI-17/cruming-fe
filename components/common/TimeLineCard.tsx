@@ -1,6 +1,8 @@
+// components/common/TimeLineCard.tsx
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ImageSourcePropType } from 'react-native';
 import { useRouter } from 'expo-router';
+import { MoreVertical } from 'lucide-react-native';
 import Dot from './Dot';
 
 type TimelinePost = {
@@ -15,9 +17,10 @@ type TimelinePost = {
 
 type TimeLineCardProps = {
     post: TimelinePost;
+    onOptionsPress: () => void;
 };
 
-export default function TimeLineCard({ post }: TimeLineCardProps) {
+export default function TimeLineCard({ post, onOptionsPress }: TimeLineCardProps) {
     const router = useRouter();
 
     const handlePress = () => {
@@ -35,7 +38,15 @@ export default function TimeLineCard({ post }: TimeLineCardProps) {
                     <Dot color={post.color} />
                     <Text style={styles.date}>{post.date}</Text>
                 </View>
-                {post.author && <Text style={styles.author}>{post.author}</Text>}
+                <TouchableOpacity
+                    onPress={(e) => {
+                        e.stopPropagation();
+                        onOptionsPress();
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                    <MoreVertical size={20} color="#8F9BB3" />
+                </TouchableOpacity>
             </View>
             <View style={styles.textContainer}>
                 <Text style={styles.title}>{post.title}</Text>
@@ -51,16 +62,6 @@ export default function TimeLineCard({ post }: TimeLineCardProps) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: 'white',
-    },
-    scrollView: {
-        flex: 1,
-    },
-    timelineContainer: {
-        padding: 16,
-    },
     postCard: {
         marginBottom: 20,
         backgroundColor: 'white',
@@ -91,10 +92,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#8F9BB3',
         fontWeight: '500',
-    },
-    contentContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 16,
     },
     textContainer: {
         paddingHorizontal: 16,

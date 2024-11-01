@@ -1,5 +1,5 @@
-import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity, Alert } from "react-native";
+// timeline/index.tsx
+import { View, StyleSheet, ScrollView, ActionSheetIOS, Platform, Alert, Modal, TouchableOpacity, Text } from "react-native";
 import React, { useState } from "react";
 import CustomCalendar from "@/components/timeline/CustomCalendar";
 import AddTimelineButton from "@/components/timeline/AddTimelineButton";
@@ -9,7 +9,9 @@ import TimeLineCard from "@/components/common/TimeLineCard";
 
 export default function Index() {
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const swipeableRefs = React.useRef<(Swipeable | null)[]>([]);
+    const [isOptionsVisible, setIsOptionsVisible] = useState(false);
+    const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+
     const dummyTimelinePosts = [
         {
             id: 1,
@@ -37,10 +39,8 @@ export default function Index() {
         },
     ];
 
-    // 실제 API 연동 시 사용할 posts state
     const [posts, setPosts] = useState(dummyTimelinePosts);
 
-    // API 호출 함수 (현재는 더미데이터 사용)
     const fetchPosts = async () => {
         try {
             // TODO: API 구현 후 실제 API 호출로 대체
@@ -52,7 +52,6 @@ export default function Index() {
         }
     };
 
-    // 삭제 API 호출 함수
     const deletePost = async (id: number) => {
         try {
             // TODO: API 구현 후 실제 API 호출로 대체
@@ -61,49 +60,39 @@ export default function Index() {
             setPosts(prev => prev.filter(post => post.id !== id));
         } catch (error) {
             console.error('Failed to delete post:', error);
-            alert('삭제에 실패했습니다. 다시 시도해주세요.');
+            Alert.alert('오류', '삭제에 실패했습니다. 다시 시도해주세요.');
         }
     };
 
-    // 외부 영역 클릭 시 모든 스와이프 닫기
-    const handleOutsidePress = () => {
-        swipeableRefs.current.forEach((ref) => {
-            if (ref) {
-                ref.close();
-            }
-        });
+    const handlePostAction = (id: number, action: 'delete' | 'edit') => {
+        setIsOptionsVisible(false);
+        if (action === 'delete') {
+            Alert.alert(
+                "삭제 확인",
+                "활동 기록을 삭제하시겠습니까?",
+                [
+                    {
+                        text: "취소",
+                        style: "cancel"
+                    },
+                    {
+                        text: "삭제",
+                        onPress: () => deletePost(id),
+                        style: "destructive"
+                    }
+                ]
+            );
+        } else if (action === 'edit') {
+            console.log('수정할 카드 ID:', id);
+            // TODO: 수정 기능 구현
+        }
     };
 
     useFocusEffect(
         React.useCallback(() => {
             setIsModalVisible(false);
-            fetchPosts(); // 화면 진입 시 posts 데이터 가져오기
+            fetchPosts();
         }, [])
-    );
-
-    const renderRightActions = (id: number) => () => (
-        <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => {
-                Alert.alert(
-                    "삭제 확인",
-                    "활동 기록을 삭제하시겠습니까?",
-                    [
-                        {
-                            text: "취소",
-                            style: "cancel"
-                        },
-                        {
-                            text: "삭제",
-                            onPress: () => deletePost(id),
-                            style: "destructive"
-                        }
-                    ]
-                );
-            }}
-        >
-            <Text style={styles.deleteButtonText}>삭제</Text>
-        </TouchableOpacity>
     );
 
     const formatDateForDisplay = (date: string) => {
@@ -122,64 +111,93 @@ export default function Index() {
         }
     }), {});
 
+    const showPostOptions = (postId: number) => {
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                {
+                    options: ["취소", "수정", "삭제"],
+                    cancelButtonIndex: 0,
+                    destructiveButtonIndex: 2,
+                },
+                (buttonIndex) => {
+                    if (buttonIndex === 1) {
+                        handlePostAction(postId, 'edit');
+                    } else if (buttonIndex === 2) {
+                        handlePostAction(postId, 'delete');
+                    }
+                }
+            );
+        } else {
+            setSelectedPostId(postId);
+            setIsOptionsVisible(true);
+        }
+    };
+
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <View style={styles.container}>
-                <TouchableOpacity
-                    activeOpacity={1}
-                    style={{ flex: 1 }}
-                    onPress={handleOutsidePress}
+        <View style={styles.container}>
+            <ScrollView style={styles.scrollView}>
+                <CustomCalendar markedDates={activeMarkedDates} />
+                {posts.map((post) => (
+                    <View key={post.id} style={styles.cardsContainer}>
+                        <TimeLineCard
+                            post={{
+                                ...post,
+                                date: formatDateForDisplay(post.date)
+                            }}
+                            onOptionsPress={() => showPostOptions(post.id)}
+                        />
+                    </View>
+                ))}
+            </ScrollView>
+            <AddTimelineButton onPress={() => setIsModalVisible(true)} />
+            <TimelineWriteModal
+                visible={isModalVisible}
+                onClose={() => setIsModalVisible(false)}
+            />
+
+            {/* Android 옵션 모달 */}
+            {Platform.OS === 'android' && (
+                <Modal
+                    visible={isOptionsVisible}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setIsOptionsVisible(false)}
                 >
-                    <ScrollView
-                        style={styles.scrollView}
-                        onScrollBeginDrag={handleOutsidePress}
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setIsOptionsVisible(false)}
                     >
-                        <CustomCalendar markedDates={activeMarkedDates} />
-                        {posts.map((post, index) => (
-                            <Swipeable
-                                key={post.id}
-                                ref={ref => {
-                                    swipeableRefs.current[index] = ref;
-                                }}
-                                containerStyle={{margin: 0, padding: 0}}
-                                renderRightActions={renderRightActions(post.id)}
-                                friction={2}
-                                overshootFriction={8}
+                        <View style={styles.bottomSheet}>
+                            <TouchableOpacity
+                                style={styles.optionButton}
+                                onPress={() => selectedPostId && handlePostAction(selectedPostId, 'edit')}
                             >
-                                <TouchableOpacity
-                                    activeOpacity={1}
-                                    onPress={(e) => {
-                                        e.stopPropagation();
-                                    }}
-                                >
-                                    <View style={styles.cardsContainer}>
-                                        <TimeLineCard
-                                            post={{
-                                                ...post,
-                                                date: formatDateForDisplay(post.date)
-                                            }}
-                                        />
-                                    </View>
-                                </TouchableOpacity>
-                            </Swipeable>
-                        ))}
-                    </ScrollView>
-                    <AddTimelineButton onPress={() => setIsModalVisible(true)} />
-                    <TimelineWriteModal
-                        visible={isModalVisible}
-                        onClose={() => setIsModalVisible(false)}
-                    />
-                </TouchableOpacity>
-            </View>
-        </GestureHandlerRootView>
+                                <Text style={styles.optionText}>수정</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.optionButton, styles.deleteOption]}
+                                onPress={() => selectedPostId && handlePostAction(selectedPostId, 'delete')}
+                            >
+                                <Text style={styles.deleteText}>삭제</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.optionButton, styles.cancelOption]}
+                                onPress={() => setIsOptionsVisible(false)}
+                            >
+                                <Text style={styles.optionText}>취소</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+            )}
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        paddingTop: 0,
         flex: 1,
-        paddingBottom: 0,
         backgroundColor: 'white',
     },
     scrollView: {
@@ -190,18 +208,37 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingBottom: 0
     },
-    deleteButton: {
-        backgroundColor: '#E31A1A',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 12,
-        width: 76,
-        margin: 16,
-        marginLeft: 0,
-        marginBottom: 20
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        justifyContent: 'flex-end',
     },
-    deleteButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
+    bottomSheet: {
+        backgroundColor: 'white',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingVertical: 20,
+        paddingHorizontal: 16,
+    },
+    optionButton: {
+        paddingVertical: 15,
+        alignItems: 'center',
+        borderRadius: 8,
+        marginBottom: 8,
+    },
+    optionText: {
+        fontSize: 16,
+        color: '#1A1F36',
+    },
+    deleteOption: {
+        backgroundColor: '#FFF1F1',
+    },
+    deleteText: {
+        fontSize: 16,
+        color: '#E31A1A',
+    },
+    cancelOption: {
+        backgroundColor: '#F7F8FA',
+        marginTop: 8,
     },
 });
