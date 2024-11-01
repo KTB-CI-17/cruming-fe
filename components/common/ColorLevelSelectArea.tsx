@@ -11,49 +11,48 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import Dot from './Dot';
 
-interface LevelSelectAreaProps {
+interface ColorLevelSelectAreaProps {
     value: string;
     onLevelSelect: (level: string) => void;
 }
 
-interface LevelOption {
+interface ColorLevelOption {
     color: string;
     label: string;
     value: string;
 }
 
-const levelOptions: LevelOption[] = [
-    { color: '#E80F0F', label: '빨강', value: '#E80F0F' },
-    { color: '#F35B04', label: '주황', value: '#F35B04' },
-    { color: '#FAC31D', label: '노랑', value: '#FAC31D' },
-    { color: '#62DF28', label: '초록', value: '#62DF28' },
-    { color: '#AFEE56', label: '연두', value: '#AFEE56' },
-    { color: '#80D1F3', label: '하늘', value: '#80D1F3' },
-    { color: '#040487', label: '남색', value: '#040487' },
-    { color: '#A161FC', label: '보라', value: '#A161FC' },
-    { color: '#F642CC', label: '핑크', value: '#F642CC' },
-    { color: '#FAFAFA', label: '흰색', value: '#FAFAFA' },
-    { color: '#888888', label: '회색', value: '#888888' },
-    { color: '#333333', label: '검정', value: '#333333' },
-    { color: '#5F4842', label: '갈색', value: '#5F4842' },
+const colorLevelOptions: ColorLevelOption[] = [
+    { color: '#FF4747', label: '빨강', value: '#FF4747' },
+    { color: '#FF8A3D', label: '주황', value: '#FF8A3D' },
+    { color: '#FFD43D', label: '노랑', value: '#FFD43D' },
+    { color: '#B4E233', label: '초록', value: '#B4E233' },
+    { color: '#69DB7C', label: '연두', value: '#69DB7C' },
+    { color: '#38D9A9', label: '하늘', value: '#38D9A9' },
+    { color: '#4DABF7', label: '남색', value: '#4DABF7' },
+    { color: '#748FFC', label: '보라', value: '#748FFC' },
+    { color: '#E599F7', label: '핑크', value: '#E599F7' },
+    { color: '#CED4DA', label: '흰색', value: '#FAFAFA' },
+    { color: '#495057', label: '회색', value: '#495057' },
+    { color: '#212529', label: '검정', value: '#212529' },
 ];
 
-export default function ColorLevelSelectArea({ value, onLevelSelect }: LevelSelectAreaProps) {
+export default function ColorLevelSelectArea({ value, onLevelSelect }: ColorLevelSelectAreaProps) {
     const [modalVisible, setModalVisible] = useState(false);
 
-    const handleLevelSelect = (level: LevelOption) => {
+    const handleLevelSelect = (level: ColorLevelOption) => {
         onLevelSelect(level.value);
         setModalVisible(false);
     };
 
     const getLevelLabel = (colorValue: string) => {
-        const option = levelOptions.find(opt => opt.value === colorValue);
+        const option = colorLevelOptions.find(opt => opt.value === colorValue);
         return option ? option.label : '* Level';
     };
 
     const getSelectedDot = () => {
         if (!value) return null;
-        const option = levelOptions.find(opt => opt.value === value);
+        const option = colorLevelOptions.find(opt => opt.value === value);
         return option ? <Dot color={option.color} /> : null;
     };
 
@@ -84,30 +83,36 @@ export default function ColorLevelSelectArea({ value, onLevelSelect }: LevelSele
                     onPress={() => setModalVisible(false)}
                 >
                     <BlurView intensity={10} style={StyleSheet.absoluteFill}>
-                        <View style={styles.modalContent}>
-                            <View style={styles.header}>
-                                <Text style={styles.title}>Level 선택</Text>
-                                <TouchableOpacity
-                                    onPress={() => setModalVisible(false)}
-                                    style={styles.closeButton}
-                                >
-                                    <Ionicons name="close" size={24} color="#8F9BB3" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.optionsContainer}>
-                                {levelOptions.map((option) => (
+                        <TouchableOpacity
+                            activeOpacity={1}
+                            style={styles.modalContentWrapper}
+                            onPress={(e) => e.stopPropagation()}
+                        >
+                            <View style={styles.modalContent}>
+                                <View style={styles.header}>
+                                    <Text style={styles.title}>Level 선택</Text>
                                     <TouchableOpacity
-                                        key={option.value}
-                                        style={styles.optionButton}
-                                        onPress={() => handleLevelSelect(option)}
+                                        onPress={() => setModalVisible(false)}
+                                        style={styles.closeButton}
                                     >
-                                        <Dot color={option.color} />
-                                        <Text style={styles.optionText}>{option.label}</Text>
+                                        <Ionicons name="close" size={24} color="#8F9BB3" />
                                     </TouchableOpacity>
-                                ))}
+                                </View>
+
+                                <View style={styles.optionsContainer}>
+                                    {colorLevelOptions.map((option) => (
+                                        <TouchableOpacity
+                                            key={option.value}
+                                            style={styles.optionButton}
+                                            onPress={() => handleLevelSelect(option)}
+                                        >
+                                            <Dot color={option.color} />
+                                            <Text style={styles.optionText}>{option.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     </BlurView>
                 </TouchableOpacity>
             </Modal>
@@ -140,11 +145,11 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
+    modalContentWrapper: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
     modalContent: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
         backgroundColor: 'white',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
