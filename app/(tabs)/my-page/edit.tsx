@@ -177,7 +177,7 @@ export default function ProfileEditPage() {
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>관심 암장</Text>
+                        <Text style={styles.label}>주 암장</Text>
                         <LocationSearch
                             value={profile.gym || ''}
                             onLocationSelect={handleGymSelect}
