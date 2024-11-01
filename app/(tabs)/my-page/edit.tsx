@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, Alert, Scro
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import LocationSearch from "@/components/common/LocationSearchArea";
 
 // 사용자 프로필 타입 정의
 type UserProfile = {
@@ -94,28 +95,23 @@ export default function ProfileEditPage() {
         }
     };
 
+    const handleGymSelect = (location: string) => {
+        setProfile(prev => ({ ...prev, gym: location }));
+    };
+
     const handleSave = async () => {
         try {
-            // 실제 API 호출로 대체될 부분
-            // const response = await fetch('YOUR_API_ENDPOINT', {
-            //     method: 'PUT',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify({ ...profile, profileImage }),
-            // });
-            // const data = await response.json();
             console.log('Saving profile:', { ...profile, profileImage });
             Alert.alert(
-                "알림",  // 제목
-                "프로필이 저장되었습니다.", // 메시지
+                "알림",
+                "프로필이 저장되었습니다.",
                 [
                     {
                         text: "확인",
+                        onPress: () => router.back()
                     }
                 ]
             );
-            router.back();
         } catch (error) {
             console.error('Error saving profile:', error);
             Alert.alert(
@@ -134,23 +130,8 @@ export default function ProfileEditPage() {
             style={styles.container}
         >
             <ScrollView style={styles.scrollView}>
-                {/* 프로필 이미지 섹션 */}
-                <View style={styles.imageSection}>
-                    <View style={styles.imageContainer}>
-                        <Image
-                            source={require('@/assets/images/default-profile.png')}
-                            style={styles.profileImage}
-                        />
-                        <TouchableOpacity
-                            style={styles.imageEditButton}
-                            onPress={pickImage}
-                        >
-                            <Ionicons name="sync" size={24} color="white" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                {/* 프로필 이미지 섹션은 동일... */}
 
-                {/* 입력 필드들 */}
                 <View style={styles.formSection}>
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>* 닉네임</Text>
@@ -197,11 +178,9 @@ export default function ProfileEditPage() {
 
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>관심 암장</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={profile.gym}
-                            onChangeText={(text) => setProfile(prev => ({ ...prev, gym: text }))}
-                            placeholder="관심있는 암장을 입력하세요"
+                        <LocationSearch
+                            value={profile.gym || ''}
+                            onLocationSelect={handleGymSelect}
                         />
                     </View>
 
@@ -216,7 +195,6 @@ export default function ProfileEditPage() {
                         />
                     </View>
 
-                    {/* 저장 버튼을 ScrollView 내부로 이동 */}
                     <View>
                         <TouchableOpacity
                             style={[

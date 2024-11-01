@@ -30,7 +30,7 @@ const dummyProfile: UserProfile = {
     gym: "손상원 클라이밍 판교점",
     followers: 1,
     following: 20,
-    isSelf: false,
+    isSelf: true,
     isFollowing: true,
     isFollowingMe: true,  // 상대방이 나를 팔로우하고 있는 상태
 };
