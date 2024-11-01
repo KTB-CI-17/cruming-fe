@@ -4,10 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import HoldAnalysisLoading from "@/components/problems/HoldAnalysisLoading";
+import HoldAnalysisResult from '@/components/problems/HoldAnalysisResult';
 
 export default function HoldQuest() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [analysisComplete, setAnalysisComplete] = useState(false);
 
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -19,19 +21,23 @@ export default function HoldQuest() {
 
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [4, 3],
             quality: 1,
         });
 
         if (!result.canceled) {
             setSelectedImage(result.assets[0].uri);
+            setAnalysisComplete(false);
         }
     };
 
     const handleSubmit = () => {
         if (selectedImage) {
             setIsLoading(true);
+            // 로딩 화면을 잠시 보여주기 위한 타이머
+            setTimeout(() => {
+                setIsLoading(false);
+                setAnalysisComplete(true);
+            }, 2000);
         }
     };
 
@@ -39,6 +45,7 @@ export default function HoldQuest() {
         useCallback(() => {
             setSelectedImage(null);
             setIsLoading(false);
+            setAnalysisComplete(false);
         }, [])
     );
 
@@ -46,6 +53,11 @@ export default function HoldQuest() {
         return <HoldAnalysisLoading />;
     }
 
+    if (analysisComplete && selectedImage) {
+        return <HoldAnalysisResult imageUri={selectedImage} />;
+    }
+
+    // styles 부분은 동일
     return (
         <View style={styles.container}>
             <TouchableOpacity
