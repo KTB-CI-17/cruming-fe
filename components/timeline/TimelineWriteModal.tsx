@@ -114,6 +114,30 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
         }
     }, [visible]);
 
+    const validateForm = () => {
+        const requiredFields: { field: keyof TimelineFormData; label: string }[] = [
+            { field: 'location', label: '위치' },
+            { field: 'activityDate', label: '활동 일자' },
+            { field: 'level', label: 'Level' },
+            { field: 'content', label: '내용' }
+        ];
+
+        const emptyFields = requiredFields
+            .filter(({ field }) => !formData[field] || formData[field].toString().trim() === '')
+            .map(({ label }) => label);
+
+        if (emptyFields.length > 0) {
+            Alert.alert(
+                "입력 오류",
+                `다음 항목을 입력해주세요:\n${emptyFields.join('\n')}`,
+                [{ text: "확인" }]
+            );
+            return false;
+        }
+
+        return true;
+    };
+
     const hasInputValues = () => {
         return (
             formData.location.trim() !== '' ||
@@ -169,6 +193,10 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
     };
 
     const handleSubmit = () => {
+        if (!validateForm()) {
+            return;
+        }
+
         Alert.alert(
             "타임라인 등록",
             "입력하신 내용으로 등록하시겠습니까?",
@@ -198,6 +226,7 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
             ]
         );
     };
+
 
 
     const handleCloseAttempt = () => {
