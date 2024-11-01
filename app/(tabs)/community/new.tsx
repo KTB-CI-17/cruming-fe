@@ -5,39 +5,19 @@ import {
     TextInput,
     ScrollView,
     TouchableOpacity,
-    Image,
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
     Alert
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import ImageUploadArea from '@/components/common/ImageUploadArea';
 
 export default function NewPost() {
     const navigation = useNavigation();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [images, setImages] = useState<string[]>([]);
-
-    const pickImage = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 1,
-        });
-
-        if (!result.canceled && result.assets[0].uri) {
-            setImages([...images, result.assets[0].uri]);
-        }
-    };
-
-    const removeImage = (index: number) => {
-        const newImages = images.filter((_, i) => i !== index);
-        setImages(newImages);
-    };
 
     // 게시글 등록 함수
     const handleSubmit = async () => {
@@ -64,6 +44,12 @@ export default function NewPost() {
                     onPress: async () => {
                         try {
                             // TODO: API 호출 구현
+                            console.log('=== 게시글 입력 데이터 ===');
+                            console.log('제목:', title);
+                            console.log('내용:', content);
+                            console.log('이미지 개수:', images.length);
+                            console.log('이미지 목록:', images);
+                            console.log('========================');
 
                             // 더미 데이터로 작업 중이므로 API 호출 성공으로 가정
                             Alert.alert('성공', '게시글이 등록되었습니다.', [
@@ -117,42 +103,13 @@ export default function NewPost() {
                 <View style={styles.divider} />
 
                 <View style={styles.imageSection}>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        style={styles.imageScrollView}
-                    >
-                        {images.length < 10 && (
-                            <TouchableOpacity
-                                style={styles.addImageButton}
-                                onPress={pickImage}
-                            >
-                                <Ionicons name="camera-outline" size={32} color="#735BF2" />
-                                <Text style={styles.addImageText}>
-                                    {images.length}/10
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-
-                        {images.map((uri, index) => (
-                            <View key={index} style={styles.imageContainer}>
-                                <Image
-                                    source={{ uri }}
-                                    style={styles.image}
-                                />
-                                <TouchableOpacity
-                                    style={styles.removeButton}
-                                    onPress={() => removeImage(index)}
-                                >
-                                    <Ionicons name="close-circle" size={24} color="#735BF2" />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                    </ScrollView>
+                    <ImageUploadArea
+                        images={images}
+                        onImagesChange={setImages}
+                    />
                 </View>
             </ScrollView>
 
-            {/* 완료 버튼 추가 */}
             <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSubmit}
@@ -193,47 +150,6 @@ const styles = StyleSheet.create({
     imageSection: {
         padding: 12,
     },
-    imageScrollView: {
-        flexDirection: 'row',
-    },
-    addImageButton: {
-        width: 100,
-        height: 100,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#735BF2',
-        borderStyle: 'dashed',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-        marginVertical: 8,
-    },
-    addImageText: {
-        color: '#735BF2',
-        marginTop: 4,
-        fontSize: 12,
-    },
-    imageContainer: {
-        width: 100,
-        height: 100,
-        marginRight: 12,
-        marginVertical: 8,
-        position: 'relative',
-    },
-    image: {
-        width: '100%',
-        height: '100%',
-        borderRadius: 8,
-    },
-    removeButton: {
-        position: 'absolute',
-        top: -8,
-        right: -8,
-        backgroundColor: 'white',
-        borderRadius: 12,
-        zIndex: 1,
-    },
-    // 완료 버튼 스타일 추가
     submitButton: {
         backgroundColor: '#735BF2',
         padding: 16,
