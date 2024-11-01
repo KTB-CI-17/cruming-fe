@@ -6,7 +6,7 @@ import {
     StyleSheet,
     FlatList,
     Text,
-    Platform, Modal,
+    Platform, Modal, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -48,22 +48,36 @@ interface LocationSearchProps {
 }
 
 
+
 export default function LocationSearch({ value, onLocationSelect }: LocationSearchProps) {
     const [searchText, setSearchText] = useState(value);
     const [searchResults, setSearchResults] = useState<Document[]>([]);
     const [showModal, setShowModal] = useState(false);
+    const [page, setPage] = useState(1);
+    const [isLoading, setIsLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [isSearching, setIsSearching] = useState(false);
 
     const handleTextChange = (text: string) => {
         setSearchText(text);
         if (text.length === 0) {
             setSearchResults([]);
+            setPage(1);
+            setHasMore(true);
         }
     };
 
-    const searchAddress = async () => {
+    const searchAddress = async (pageNumber: number = 1, isNewSearch: boolean = true) => {
+        if (isLoading || (pageNumber > 1 && !hasMore)) return;
+
         try {
+            setIsLoading(true);
+            if (isNewSearch) {
+                setIsSearching(true);
+            }
+
             const response = await fetch(
-                `https://dapi.kakao.com/v2/local/search/keyword?query=${encodeURIComponent(searchText)}`,
+                `https://dapi.kakao.com/v2/local/search/keyword?query=${encodeURIComponent(searchText)}&page=${pageNumber}&size=15`,
                 {
                     method: 'GET',
                     headers: {
@@ -77,24 +91,64 @@ export default function LocationSearch({ value, onLocationSelect }: LocationSear
             }
 
             const data: KakaoKeywordResponse = await response.json();
-            setSearchResults(data.documents);
-            setShowModal(true);
+
+            // 새로운 검색이면 결과를 대체하고, 아니면 기존 결과에 추가
+            if (isNewSearch) {
+                setSearchResults(data.documents);
+                setShowModal(true);
+            } else {
+                setSearchResults(prev => [...prev, ...data.documents]);
+            }
+
+            // 더 불러올 데이터가 있는지 확인
+            setHasMore(
+                data.meta.is_end === false &&
+                data.meta.pageable_count > pageNumber * 15
+            );
+
+            setPage(pageNumber);
 
         } catch (error) {
             console.error('주소 검색 중 오류 발생:', error);
-            setSearchResults([]);
+            if (isNewSearch) {
+                setSearchResults([]);
+            }
+        } finally {
+            setIsLoading(false);
+            if (isNewSearch) {
+                setIsSearching(false);
+            }
+        }
+    };
+
+    const handleLoadMore = () => {
+        if (!isLoading && hasMore) {
+            searchAddress(page + 1, false);
         }
     };
 
     const handleLocationSelect = (location: Document) => {
         setSearchText(location.place_name);
         setShowModal(false);
+        // 모달이 닫힐 때 검색 상태 초기화
+        setPage(1);
+        setHasMore(true);
+        setSearchResults([]);
 
         const locationData: LocationData = {
             placeName: location.place_name,
             roadAddress: location.road_address_name,
         };
         onLocationSelect(locationData);
+    };
+
+    const renderFooter = () => {
+        if (!isLoading) return null;
+        return (
+            <View style={styles.loadingFooter}>
+                <ActivityIndicator size="small" color="#0080FF" />
+            </View>
+        );
     };
 
     const renderItem = ({ item }: { item: Document }) => (
@@ -119,9 +173,14 @@ export default function LocationSearch({ value, onLocationSelect }: LocationSear
                 />
                 <TouchableOpacity
                     style={styles.searchIconButton}
-                    onPress={searchAddress}
+                    onPress={() => searchAddress(1, true)}
+                    disabled={isSearching}
                 >
-                    <Ionicons name="search" size={18} color="#8F9BB3" />
+                    {isSearching ? (
+                        <ActivityIndicator size="small" color="#8F9BB3" />
+                    ) : (
+                        <Ionicons name="search" size={18} color="#8F9BB3" />
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -129,14 +188,24 @@ export default function LocationSearch({ value, onLocationSelect }: LocationSear
                 visible={showModal}
                 transparent={true}
                 animationType="fade"
-                onRequestClose={() => setShowModal(false)}
+                onRequestClose={() => {
+                    setShowModal(false);
+                    setPage(1);
+                    setHasMore(true);
+                    setSearchResults([]);
+                }}
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>위치 검색 결과</Text>
                             <TouchableOpacity
-                                onPress={() => setShowModal(false)}
+                                onPress={() => {
+                                    setShowModal(false);
+                                    setPage(1);
+                                    setHasMore(true);
+                                    setSearchResults([]);
+                                }}
                                 style={styles.closeButton}
                             >
                                 <Ionicons name="close" size={24} color="#2E3A59" />
@@ -149,6 +218,9 @@ export default function LocationSearch({ value, onLocationSelect }: LocationSear
                                 keyExtractor={(item, index) => `${item.place_name}-${index}`}
                                 style={styles.resultsList}
                                 contentContainerStyle={styles.resultsContent}
+                                onEndReached={handleLoadMore}
+                                onEndReachedThreshold={0.5}
+                                ListFooterComponent={renderFooter}
                             />
                         ) : (
                             <View style={styles.noResultsContainer}>
@@ -252,5 +324,10 @@ const styles = StyleSheet.create({
     noResultsText: {
         fontSize: 16,
         color: '#8F9BB3',
+    },
+    loadingFooter: {
+        paddingVertical: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
