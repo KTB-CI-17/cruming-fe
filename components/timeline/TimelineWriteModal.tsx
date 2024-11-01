@@ -1,105 +1,337 @@
-// components/timeline/TimelineWriteModal.tsx
-import React from 'react';
-import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    Modal,
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet,
+    Alert,
+    Platform,
+    ScrollView,
+    Animated,
+    Dimensions
+} from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
+import { X } from 'lucide-react-native';
+import ImageUploadArea from '../../components/common/ImageUploadArea';
+import PostAddInfoArea from '../../components/common/PostAddInfoArea';
 
 type TimelineWriteModalProps = {
     visible: boolean;
     onClose: () => void;
 };
 
+type PrivacyType = '전체 공개' | '팔로워 공개' | '나만보기';
+
+interface TimelineFormData {
+    location: string;
+    activityDate: string;
+    level: string;
+    content: string;
+    images: string[];
+    privacy: PrivacyType;
+}
+
+const initialFormData: TimelineFormData = {
+    location: '',
+    activityDate: '',
+    level: '',
+    content: '',
+    images: [],
+    privacy: '전체 공개'
+};
+
 export default function TimelineWriteModal({ visible, onClose }: TimelineWriteModalProps) {
+    const [modalVisible, setModalVisible] = useState(visible);
+    const [formData, setFormData] = useState<TimelineFormData>(initialFormData);
+    const slideAnim = useRef(new Animated.Value(0)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const screenHeight = Dimensions.get('window').height;
+    const modalHeight = screenHeight * 0.9;
+
+    const hasInputValues = () => {
+        return (
+            formData.location.trim() !== '' ||
+            formData.activityDate !== '' ||
+            formData.level !== '' ||
+            formData.content.trim() !== '' ||
+            formData.images.length > 0 ||
+            formData.privacy !== '전체 공개'
+        );
+    };
+
+    useEffect(() => {
+        if (visible) {
+            setModalVisible(true);
+            slideAnim.setValue(modalHeight);
+            fadeAnim.setValue(0);
+
+            Animated.parallel([
+                Animated.timing(slideAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        }
+    }, [visible]);
+
+    const closeWithAnimation = (afterClose?: () => void) => {
+        if (!hasInputValues()) {
+            executeClose(afterClose);
+            return;
+        }
+
+        Alert.alert(
+            "입력 취소",
+            "입력하신 내용은 저장되지 않습니다. 입력을 취소하시겠습니까?",
+            [
+                {
+                    text: "계속 입력",
+                    style: "cancel"
+                },
+                {
+                    text: "취소",
+                    style: "destructive",
+                    onPress: () => executeClose(afterClose)
+                }
+            ]
+        );
+    };
+
+    const executeClose = (afterClose?: () => void) => {
+        Animated.parallel([
+            Animated.timing(slideAnim, {
+                toValue: modalHeight,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            setModalVisible(false);
+            setFormData(initialFormData);
+            afterClose?.();
+        });
+    };
+
+    const handleCloseAttempt = () => {
+        closeWithAnimation(() => onClose());
+    };
+
+    const handleOverlayPress = () => {
+        handleCloseAttempt();
+    };
+
+    const handleInputChange = (field: keyof TimelineFormData, value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleDateSelect = () => {
+        // TODO: 달력 선택 로직 구현
+        const tempDate = '2024-11-01';
+        handleInputChange('activityDate', tempDate);
+    };
+
+    const handleLevelSelect = () => {
+        // TODO: 레벨 선택 로직 구현
+        const tempLevel = 'Level 1';
+        handleInputChange('level', tempLevel);
+    };
+
+    const handlePrivacySelect = (privacy: PrivacyType) => {
+        handleInputChange('privacy', privacy);
+    };
+
+    const handleSubmit = () => {
+        console.log('=== Timeline 입력 데이터 ===');
+        console.log('위치:', formData.location);
+        console.log('활동 일자:', formData.activityDate);
+        console.log('Level:', formData.level);
+        console.log('내용:', formData.content);
+        console.log('이미지 개수:', formData.images.length);
+        console.log('이미지 목록:', formData.images);
+        console.log('공개 범위:', formData.privacy);
+        console.log('========================');
+
+        closeWithAnimation(() => onClose());
+    };
+
     return (
-        <Modal transparent visible={visible} animationType="fade">
-            <BlurView intensity={10} style={StyleSheet.absoluteFill}>
-                <Pressable style={styles.overlay} onPress={onClose}>
-                    <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
-                        <Text style={styles.title}>활동 기록 등록</Text>
-
-                        <View style={styles.inputContainer}>
-                             {/*TODO: 클릭 시 주소찾기 팝업이 출력되도록*/}
-                            <TextInput
-                                style={styles.input}
-                                placeholder="* 위치"
-                                placeholderTextColor="#8F9BB3"
-                            />
-
-                            {/*TODO: 클릭 시 달력 선택 팝업이 출력되도록*/}
-                            <TouchableOpacity style={styles.input}>
-                                <Text style={styles.inputText}>* 활동 일자</Text>
-                                <Ionicons name="calendar-outline" size={20} color="#8F9BB3" />
-                            </TouchableOpacity>
-
-                            {/*TODO: 클릭 시 색깔 선택 셀렉트 박스*/}
-                            <TouchableOpacity style={styles.input}>
-                                <Text style={styles.inputText}>* Level</Text>
-                                <Ionicons name="chevron-down" size={20} color="#8F9BB3" />
-                            </TouchableOpacity>
-
-                            <TextInput
-                                style={[styles.input, styles.multilineInput]}
-                                placeholder="* 내용"
-                                placeholderTextColor="#8F9BB3"
-                                multiline
-                                numberOfLines={4}
-                            />
-
-                            {/*TODO: 클릭 시 사진 업로드 가능하도록*/}
-                            <TouchableOpacity style={styles.imageButton}>
-                                <Ionicons name="camera" size={24} color="#8F9BB3" />
-                                <Text style={styles.imageButtonText}>활동 사진</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/*TODO: 공개 범위 클릭 시 변경 가능 하도록*/}
-                        <View style={styles.buttonContainer}>
+        <Modal transparent visible={modalVisible} animationType="none" onRequestClose={handleCloseAttempt}>
+            <Animated.View
+                style={[
+                    StyleSheet.absoluteFill,
+                    styles.overlay,
+                    {
+                        opacity: fadeAnim,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    }
+                ]}
+            >
+                <TouchableOpacity
+                    style={StyleSheet.absoluteFill}
+                    activeOpacity={1}
+                    onPress={handleOverlayPress}
+                >
+                    <BlurView intensity={10} style={StyleSheet.absoluteFill}>
+                        <Animated.View
+                            style={[
+                                styles.modalContent,
+                                {
+                                    height: modalHeight,
+                                    transform: [{
+                                        translateY: slideAnim
+                                    }]
+                                }
+                            ]}
+                        >
                             <TouchableOpacity
-                                style={[styles.button, styles.selectedButton]}
-                                onPress={() => {}}>
-                                <Text style={styles.selectedButtonText}>전체 공개</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.button}>
-                                <Text style={styles.buttonText}>팔로워 공개</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.button}>
-                                <Text style={styles.buttonText}>나만보기</Text>
-                            </TouchableOpacity>
-                        </View>
+                                activeOpacity={1}
+                                onPress={(e) => e.stopPropagation()}
+                                style={{ flex: 1 }}
+                            >
+                                <View style={styles.headerArea}>
+                                    <View style={styles.titleContainer}>
+                                        <Text style={styles.title}>타임라인 등록</Text>
+                                        <TouchableOpacity
+                                            style={styles.closeButton}
+                                            onPress={handleCloseAttempt}
+                                        >
+                                            <X size={24} color="#8F9BB3" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
 
-                        <TouchableOpacity style={styles.submitButton}>
-                            <Text style={styles.submitButtonText}>등록</Text>
-                        </TouchableOpacity>
-                    </Pressable>
-                </Pressable>
-            </BlurView>
+                                <ScrollView style={styles.scrollContainer}>
+                                    <View style={styles.inputContainer}>
+                                        <PostAddInfoArea
+                                            value={formData.location}
+                                            placeholder="* 위치"
+                                            onChangeText={(text) => handleInputChange('location', text)}
+                                        />
+
+                                        <PostAddInfoArea
+                                            value={formData.activityDate}
+                                            placeholder="* 활동 일자"
+                                            onPress={handleDateSelect}
+                                            iconName="calendar-outline"
+                                        />
+
+                                        <PostAddInfoArea
+                                            value={formData.level}
+                                            placeholder="* Level"
+                                            onPress={handleLevelSelect}
+                                            iconName="chevron-down"
+                                        />
+
+                                        <TextInput
+                                            style={[styles.input, styles.multilineInput]}
+                                            placeholder="* 내용"
+                                            placeholderTextColor="#8F9BB3"
+                                            multiline
+                                            numberOfLines={4}
+                                            value={formData.content}
+                                            onChangeText={(text) => handleInputChange('content', text)}
+                                        />
+
+                                        <ImageUploadArea
+                                            images={formData.images}
+                                            onImagesChange={(images) => handleInputChange('images', images)}
+                                        />
+
+                                        <View style={styles.buttonContainer}>
+                                            {(['전체 공개', '팔로워 공개', '나만보기'] as PrivacyType[]).map((privacy) => (
+                                                <TouchableOpacity
+                                                    key={privacy}
+                                                    style={[
+                                                        styles.button,
+                                                        formData.privacy === privacy && styles.selectedButton
+                                                    ]}
+                                                    onPress={() => handlePrivacySelect(privacy)}>
+                                                    <Text
+                                                        style={[
+                                                            styles.buttonText,
+                                                            formData.privacy === privacy && styles.selectedButtonText
+                                                        ]}>
+                                                        {privacy}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+
+                                        <TouchableOpacity
+                                            style={styles.submitButton}
+                                            onPress={handleSubmit}
+                                        >
+                                            <Text style={styles.submitButtonText}>등록</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </ScrollView>
+                            </TouchableOpacity>
+                        </Animated.View>
+                    </BlurView>
+                </TouchableOpacity>
+            </Animated.View>
         </Modal>
     );
 }
 
+
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.1)',
+        justifyContent: 'flex-end',
     },
     modalContent: {
         width: '100%',
-        marginTop: '70%',
-        height: '100%',
         backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 20,
-        elevation: 5,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+    },
+    headerArea: {
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E4E9F2',
+    },
+    titleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',  // 상대 위치 설정으로 closeButton의 absolute 포지셔닝의 기준점이 됨
     },
     title: {
         fontSize: 18,
         fontWeight: '600',
-        marginBottom: 20,
         textAlign: 'center',
     },
+    closeButton: {
+        position: 'absolute',
+        right: 0,
+        padding: 4,  // 터치 영역을 좀 더 크게 만듦
+    },
+    scrollContainer: {
+        flex: 1,
+    },
     inputContainer: {
+        padding: 20,
         gap: 12,
     },
     input: {
@@ -111,27 +343,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    inputText: {
-        color: '#8F9BB3',
-    },
     multilineInput: {
-        // height: '28%',
         height: 150,
         textAlignVertical: 'top',
-    },
-    imageButton: {
-        height: 150,
-        borderWidth: 1,
-        borderStyle: 'dashed',
-        borderColor: '#E4E9F2',
-        borderRadius: 8,
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-    },
-    imageButtonText: {
-        color: '#8F9BB3',
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -163,6 +377,7 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
+        marginBottom: Platform.OS === 'ios' ? 34 : 20,
     },
     submitButtonText: {
         color: 'white',
