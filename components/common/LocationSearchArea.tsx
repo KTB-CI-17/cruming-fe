@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import {
     View,
-    Text,
     TextInput,
     TouchableOpacity,
     StyleSheet,
-    Platform
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface LocationSearchProps {
     value: string;
@@ -14,23 +13,11 @@ interface LocationSearchProps {
 }
 
 export default function LocationSearch({ value, onLocationSelect }: LocationSearchProps) {
-    const [searchText, setSearchText] = useState('');
+    const [searchText, setSearchText] = useState(value);
 
-    const handleSearch = async () => {
-        try {
-            // TODO: 주소 검색 API 호출
-            console.log('=== 주소 검색 API 호출 ===');
-            console.log('검색어:', searchText);
-            console.log('========================');
-
-            // API 호출 후 결과 예시
-            const mockResult = '서울특별시 강남구 테헤란로 419';
-            onLocationSelect(mockResult);
-            setSearchText('');
-        } catch (error) {
-            console.error('주소 검색 실패:', error);
-            // TODO: 에러 처리
-        }
+    const handleTextChange = (text: string) => {
+        setSearchText(text);
+        onLocationSelect(text);
     };
 
     return (
@@ -40,14 +27,11 @@ export default function LocationSearch({ value, onLocationSelect }: LocationSear
                     style={styles.input}
                     placeholder="* 위치"
                     placeholderTextColor="#8F9BB3"
-                    value={value || searchText}
-                    onChangeText={setSearchText}
+                    value={searchText}
+                    onChangeText={handleTextChange}
                 />
-                <TouchableOpacity
-                    style={styles.searchButton}
-                    onPress={handleSearch}
-                >
-                    <Text style={styles.searchButtonText}>주소 검색</Text>
+                <TouchableOpacity style={styles.searchIconButton}>
+                    <Ionicons name="search" size={18} color="#8F9BB3" />
                 </TouchableOpacity>
             </View>
         </View>
@@ -61,7 +45,7 @@ const styles = StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        position: 'relative',
     },
     input: {
         flex: 1,
@@ -69,18 +53,11 @@ const styles = StyleSheet.create({
         borderColor: '#E4E9F2',
         borderRadius: 8,
         padding: 12,
+        paddingRight: 40, // 돋보기 아이콘을 위한 여백
     },
-    searchButton: {
-        backgroundColor: '#735BF2',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    searchButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: '600',
+    searchIconButton: {
+        position: 'absolute',
+        right: 8,
+        padding: 4,
     },
 });
