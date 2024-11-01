@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ImageUploadArea from '../../components/common/ImageUploadArea';
 import LocationSearchArea from '../../components/common/LocationSearchArea';
 import DatePickerArea from "@/components/common/DatePickerArea";
+import ColorLevelSelectArea from "@/components/common/ColorLevelSelectArea";
 
 type TimelineWriteModalProps = {
     visible: boolean;
@@ -193,9 +194,9 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
     };
 
     const handleSubmit = () => {
-        if (!validateForm()) {
-            return;
-        }
+        // if (!validateForm()) {
+        //     return;
+        // }
 
         Alert.alert(
             "타임라인 등록",
@@ -248,10 +249,8 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
         handleInputChange('activityDate', date);
     };
 
-    const handleLevelSelect = () => {
-        // TODO: 레벨 선택 로직 구현
-        const tempLevel = 'Level 1';
-        handleInputChange('level', tempLevel);
+    const handleLevelSelect = (level: string) => {
+        handleInputChange('level', level);
     };
 
     const handlePrivacySelect = (privacy: PrivacyType) => {
@@ -320,11 +319,9 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
                                             onDateSelect={handleDateSelect}
                                         />
 
-                                        <FormInput
+                                        <ColorLevelSelectArea
                                             value={formData.level}
-                                            placeholder="* Level"
-                                            onPress={handleLevelSelect}
-                                            iconName="chevron-down"
+                                            onLevelSelect={handleLevelSelect}
                                         />
 
                                         <TextInput
