@@ -17,6 +17,7 @@ interface UserProfile {
     following?: number;
     isSelf?: boolean;
     isFollowing?: boolean;
+    isFollowingMe?: boolean;  // 추가된 필드
 }
 
 const dummyProfile: UserProfile = {
@@ -31,6 +32,7 @@ const dummyProfile: UserProfile = {
     following: 20,
     isSelf: false,
     isFollowing: true,
+    isFollowingMe: true,  // 상대방이 나를 팔로우하고 있는 상태
 };
 
 export default function MyPage() {
@@ -68,14 +70,13 @@ export default function MyPage() {
         return value ? `${value} cm` : "-";
     };
 
-    // my-page/index.tsx의 renderFollowButton 함수만 수정
-
     const renderFollowButton = () => {
         if (!profile.isSelf) {
             return (
                 <View style={styles.buttonContainer}>
                     <FollowButton
                         initialIsFollowing={profile.isFollowing || false}
+                        isFollowingMe={profile.isFollowingMe || false}
                         userId={profile.id}
                         onFollowStatusChange={handleFollowStatusChange}
                     />
@@ -101,11 +102,13 @@ export default function MyPage() {
     return (
         <View style={styles.container}>
             <ScrollView style={styles.scrollView}>
-                <View style={styles.settingsButtonContainer}>
-                    <TouchableOpacity onPress={handleSettingsPress}>
-                        <Ionicons name="settings-outline" size={24} color="#666" />
-                    </TouchableOpacity>
-                </View>
+                {profile.isSelf && (
+                    <View style={styles.settingsButtonContainer}>
+                        <TouchableOpacity onPress={handleSettingsPress}>
+                            <Ionicons name="settings-outline" size={24} color="#666" />
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 <View style={styles.profileSection}>
                     <View style={styles.profileImageContainer}>

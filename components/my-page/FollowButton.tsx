@@ -4,12 +4,14 @@ import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-nat
 
 type FollowButtonProps = {
     initialIsFollowing: boolean;
+    isFollowingMe: boolean;
     userId: string;
     onFollowStatusChange?: (isFollowing: boolean) => void;
 };
 
 export default function FollowButton({
                                          initialIsFollowing,
+                                         isFollowingMe,
                                          userId,
                                          onFollowStatusChange
                                      }: FollowButtonProps) {
@@ -35,6 +37,12 @@ export default function FollowButton({
         }
     };
 
+    const getButtonText = () => {
+        if (isFollowing) return "팔로잉 취소";
+        if (isFollowingMe) return "맞팔로잉";
+        return "팔로잉";
+    };
+
     return (
         <TouchableOpacity
             style={styles.button}
@@ -45,7 +53,7 @@ export default function FollowButton({
                 <ActivityIndicator size="small" color="#333" />
             ) : (
                 <Text style={styles.buttonText}>
-                    {isFollowing ? "팔로잉 취소" : "팔로잉"}
+                    {getButtonText()}
                 </Text>
             )}
         </TouchableOpacity>
@@ -67,3 +75,5 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
 });
+
+
