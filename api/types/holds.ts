@@ -10,7 +10,7 @@ export interface Coordinates {
 export interface HoldDetection {
     coordinates: Coordinates;
     confidence: number;
-    class_id: number;
+    class: string;
 }
 
 export interface AnalysisResponse {
