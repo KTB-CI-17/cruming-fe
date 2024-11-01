@@ -17,6 +17,7 @@ import { X } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ImageUploadArea from '../../components/common/ImageUploadArea';
 import LocationSearchArea from '../../components/common/LocationSearchArea';
+import DatePickerArea from "@/components/common/DatePickerArea";
 
 type TimelineWriteModalProps = {
     visible: boolean;
@@ -86,21 +87,11 @@ function FormInput({
 export default function TimelineWriteModal({ visible, onClose }: TimelineWriteModalProps) {
     const [modalVisible, setModalVisible] = useState(visible);
     const [formData, setFormData] = useState<TimelineFormData>(initialFormData);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const slideAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const screenHeight = Dimensions.get('window').height;
     const modalHeight = screenHeight * 0.9;
-
-    const hasInputValues = () => {
-        return (
-            formData.location.trim() !== '' ||
-            formData.activityDate !== '' ||
-            formData.level !== '' ||
-            formData.content.trim() !== '' ||
-            formData.images.length > 0 ||
-            formData.privacy !== '전체 공개'
-        );
-    };
 
     useEffect(() => {
         if (visible) {
@@ -123,8 +114,19 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
         }
     }, [visible]);
 
+    const hasInputValues = () => {
+        return (
+            formData.location.trim() !== '' ||
+            formData.activityDate !== '' ||
+            formData.level !== '' ||
+            formData.content.trim() !== '' ||
+            formData.images.length > 0 ||
+            formData.privacy !== '전체 공개'
+        );
+    };
+
     const closeWithAnimation = (afterClose?: () => void) => {
-        if (!hasInputValues()) {
+        if (!hasInputValues() || isSubmitting) {
             executeClose(afterClose);
             return;
         }
@@ -161,9 +163,42 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
         ]).start(() => {
             setModalVisible(false);
             setFormData(initialFormData);
+            setIsSubmitting(false);
             afterClose?.();
         });
     };
+
+    const handleSubmit = () => {
+        Alert.alert(
+            "타임라인 등록",
+            "입력하신 내용으로 등록하시겠습니까?",
+            [
+                {
+                    text: "등록",
+                    style: "cancel",
+                    onPress: () => {
+                        setIsSubmitting(true);
+
+                        console.log('=== Timeline 입력 데이터 ===');
+                        console.log('위치:', formData.location);
+                        console.log('활동 일자:', formData.activityDate);
+                        console.log('Level:', formData.level);
+                        console.log('내용:', formData.content);
+                        console.log('이미지 개수:', formData.images.length);
+                        console.log('이미지 목록:', formData.images);
+                        console.log('공개 범위:', formData.privacy);
+                        console.log('========================');
+                        executeClose(onClose);
+                    }
+                },
+                {
+                    text: "취소",
+                    style: "destructive",
+                }
+            ]
+        );
+    };
+
 
     const handleCloseAttempt = () => {
         closeWithAnimation(() => onClose());
@@ -180,10 +215,8 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
         }));
     };
 
-    const handleDateSelect = () => {
-        // TODO: 달력 선택 로직 구현
-        const tempDate = '2024-11-01';
-        handleInputChange('activityDate', tempDate);
+    const handleDateSelect = (date: string) => {
+        handleInputChange('activityDate', date);
     };
 
     const handleLevelSelect = () => {
@@ -194,20 +227,6 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
 
     const handlePrivacySelect = (privacy: PrivacyType) => {
         handleInputChange('privacy', privacy);
-    };
-
-    const handleSubmit = () => {
-        console.log('=== Timeline 입력 데이터 ===');
-        console.log('위치:', formData.location);
-        console.log('활동 일자:', formData.activityDate);
-        console.log('Level:', formData.level);
-        console.log('내용:', formData.content);
-        console.log('이미지 개수:', formData.images.length);
-        console.log('이미지 목록:', formData.images);
-        console.log('공개 범위:', formData.privacy);
-        console.log('========================');
-
-        closeWithAnimation(() => onClose());
     };
 
     const handleLocationSelect = (location: string) => {
@@ -267,11 +286,9 @@ export default function TimelineWriteModal({ visible, onClose }: TimelineWriteMo
                                             onLocationSelect={handleLocationSelect}
                                         />
 
-                                        <FormInput
+                                        <DatePickerArea
                                             value={formData.activityDate}
-                                            placeholder="* 활동 일자"
-                                            onPress={handleDateSelect}
-                                            iconName="calendar-outline"
+                                            onDateSelect={handleDateSelect}
                                         />
 
                                         <FormInput

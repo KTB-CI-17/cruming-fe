@@ -20,6 +20,7 @@
     "@react-navigation/native-stack": "^6.11.0",
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",
+    "date-fns": "^4.1.0",
     "expo": "~51.0.28",
     "expo-blur": "~13.0.2",
     "expo-constants": "~16.0.2",
