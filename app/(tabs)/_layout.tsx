@@ -17,7 +17,6 @@ export default function TabLayout() {
                 name="profile"
                 options={{
                     title: '내 정보',
-                    href: '/profile/',
                     tabBarIcon: ({ color }) => (
                         <Image
                             source={require('../../assets/images/mypage-icon.png')}
