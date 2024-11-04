@@ -8,6 +8,7 @@ export interface Post {
     content: string;
     authorName: string;
     authorImage?: string;
+    user_id: number;
     is_writer: boolean;
     createdAt: string;
     instagram?: string;  // 선택적 필드

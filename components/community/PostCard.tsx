@@ -19,11 +19,7 @@ export default function PostCard({ post }: PostCardProps) {
     const router = useRouter();
 
     const handlePress = () => {
-        // 방법 1: category가 고정값인 경우
-        router.push(`/community/general/${post.id}`);
-
-        // 방법 2: category가 동적인 경우
-        // router.push(`/community/${post.category || 'general'}/${post.id}`);
+        router.push(`/community/${post.id}`);
     };
 
     return (

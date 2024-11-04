@@ -14,9 +14,10 @@ export default function TabLayout() {
                 headerShown: false,
             }}>
             <Tabs.Screen
-                name="my-page"
+                name="profile"
                 options={{
                     title: '내 정보',
+                    href: '/profile/',
                     tabBarIcon: ({ color }) => (
                         <Image
                             source={require('../../assets/images/mypage-icon.png')}

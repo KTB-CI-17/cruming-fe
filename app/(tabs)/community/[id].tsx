@@ -25,6 +25,7 @@ export default function PostDetailPage() {
                 content: "오늘은 핑크레벨을 도전하였다. ".repeat(20),
                 authorName: "벽타는 낙타",
                 authorImage: "link",  // 기본 프로필 이미지
+                user_id: 2,
                 is_writer: true,
                 createdAt: new Date().toISOString(),
                 instagram: "instagram_id"
@@ -80,6 +81,7 @@ export default function PostDetailPage() {
                         authorName={post.authorName}
                         authorImage={post.authorImage}
                         instagram={post.instagram}
+                        userId={post.user_id}
                     />
                     <PostContent
                         image={post.image}

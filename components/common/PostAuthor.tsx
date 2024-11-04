@@ -1,20 +1,28 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import {router} from "expo-router";
 
 interface PostAuthorProps {
-    authorName: string;         // 필수
-    authorImage?: string;       // 선택
-    instagram?: string;         // 선택
+    authorName: string;
+    authorImage?: string;
+    instagram?: string;
+    userId: number;
 }
 
-export default function PostAuthor({ authorName, authorImage, instagram }: PostAuthorProps) {
+export default function PostAuthor({ authorName, authorImage, instagram, userId }: PostAuthorProps) {
+    const navigation = useNavigation();
+
+    const handleProfilePress = () => {
+        router.push(`/profile/${userId}`);
+    };
+
     return (
-        <View style={styles.authorContainer}>
+        <TouchableOpacity
+            onPress={handleProfilePress}
+            style={styles.authorContainer}
+        >
             <Image
-                // source={authorImage
-                //     ? { uri: authorImage }
-                //     : require('@/assets/images/default-profile.png')  // 기본 프로필 이미지
-                // }
                 source={require('@/assets/images/default-profile.png')}
                 style={styles.authorImage}
             />
@@ -26,9 +34,10 @@ export default function PostAuthor({ authorName, authorImage, instagram }: PostA
                     </View>
                 )}
             </View>
-        </View>
+        </TouchableOpacity>
     );
 }
+
 
 const styles = StyleSheet.create({
     authorContainer: {

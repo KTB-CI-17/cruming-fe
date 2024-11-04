@@ -1,9 +1,10 @@
+import { useLocalSearchParams } from 'expo-router';
 import React, {useEffect, useState} from 'react';
 import {View, Text, Image, TouchableOpacity, StyleSheet, ScrollView} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import Timeline from "@/components/my-page/Timeline";
-import FollowButton from '@/components/my-page/FollowButton';
+import Timeline from "@/components/profile/Timeline";
+import FollowButton from '@/components/profile/FollowButton';
 
 interface UserProfile {
     id: string;
@@ -17,10 +18,11 @@ interface UserProfile {
     following?: number;
     isSelf?: boolean;
     isFollowing?: boolean;
-    isFollowingMe?: boolean;  // 추가된 필드
+    isFollowingMe?: boolean;
 }
 
-const dummyProfile: UserProfile = {
+// 다른 사용자 프로필 더미 데이터
+const userDummyProfile: UserProfile = {
     id: '123',
     nickname: "벽타는 낙타",
     sns: "@_instangram_id",
@@ -30,36 +32,34 @@ const dummyProfile: UserProfile = {
     gym: "손상원 클라이밍 판교점",
     followers: 1,
     following: 20,
-    isSelf: true,
-    isFollowing: true,
-    isFollowingMe: true,  // 상대방이 나를 팔로우하고 있는 상태
+    isSelf: false,  // 다른 사용자의 프로필이므로 false
+    isFollowing: false,
+    isFollowingMe: false,
 };
 
-export default function MyPage() {
-    const [profile, setProfile] = useState<UserProfile>(dummyProfile);
+export default function UserProfilePage() {
+    const { id } = useLocalSearchParams();
+    const [profile, setProfile] = useState<UserProfile>(userDummyProfile);
     const router = useRouter();
 
-    const handleSettingsPress = () => {
-        router.navigate('/my-page/settings');
-    };
+    useEffect(() => {
+        fetchUserProfile(id as string);
+    }, [id]);
 
-    const handleEditPress = () => {
-        router.navigate('/my-page/edit');
+    const fetchUserProfile = async (userId: string) => {
+        // 실제 구현에서는 API 호출로 해당 사용자의 프로필 데이터를 가져옴
+        setProfile({
+            ...userDummyProfile,
+            id: userId,
+        });
     };
 
     const handleFollowStatusChange = (isFollowing: boolean) => {
         setProfile(prev => ({
             ...prev,
-            followers: isFollowing ? (prev.followers || 0) + 1 : (prev.followers || 0) - 1
+            followers: isFollowing ? (prev.followers || 0) + 1 : (prev.followers || 0) - 1,
+            isFollowing: isFollowing
         }));
-    };
-
-    useEffect(() => {
-        fetchProfile();
-    }, []);
-
-    const fetchProfile = async () => {
-        setProfile(dummyProfile);
     };
 
     const renderOptionalSection = (value: any, component: JSX.Element) => {
@@ -70,46 +70,9 @@ export default function MyPage() {
         return value ? `${value} cm` : "-";
     };
 
-    const renderFollowButton = () => {
-        if (!profile.isSelf) {
-            return (
-                <View style={styles.buttonContainer}>
-                    <FollowButton
-                        initialIsFollowing={profile.isFollowing || false}
-                        isFollowingMe={profile.isFollowingMe || false}
-                        userId={profile.id}
-                        onFollowStatusChange={handleFollowStatusChange}
-                    />
-                </View>
-            );
-        }
-
-        return (
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleEditPress}
-                >
-                    <Text style={styles.buttonText}>프로필 수정</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button}>
-                    <Text style={styles.buttonText}>프로필 공유</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    };
-
     return (
         <View style={styles.container}>
             <ScrollView style={styles.scrollView}>
-                {profile.isSelf && (
-                    <View style={styles.settingsButtonContainer}>
-                        <TouchableOpacity onPress={handleSettingsPress}>
-                            <Ionicons name="settings-outline" size={24} color="#666" />
-                        </TouchableOpacity>
-                    </View>
-                )}
-
                 <View style={styles.profileSection}>
                     <View style={styles.profileImageContainer}>
                         <Image
@@ -169,7 +132,14 @@ export default function MyPage() {
                         <Text style={styles.description}>{profile.info}</Text>
                     )}
 
-                    {renderFollowButton()}
+                    <View style={styles.buttonContainer}>
+                        <FollowButton
+                            initialIsFollowing={profile.isFollowing || false}
+                            isFollowingMe={profile.isFollowingMe || false}
+                            userId={profile.id}
+                            onFollowStatusChange={handleFollowStatusChange}
+                        />
+                    </View>
                 </View>
 
                 <Timeline />
@@ -177,6 +147,7 @@ export default function MyPage() {
         </View>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {
