@@ -1,8 +1,7 @@
-// components/my-page/Timeline.tsx
-import TimelineCard from "@/components/common/TimelineCard";
 import { StyleSheet, View, Platform, Modal, TouchableOpacity, Text, Alert } from "react-native";
 import React, { useState } from "react";
 import { ActionSheetIOS } from "react-native";
+import TimelineCard from "@/components/common/TimeLineCard";
 
 const dummyTimelinePosts = [
     {

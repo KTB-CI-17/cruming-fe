@@ -4,7 +4,7 @@ import CustomCalendar from "@/components/timeline/CustomCalendar";
 import AddTimelineButton from "@/components/timeline/AddTimelineButton";
 import { useFocusEffect } from "@react-navigation/native";
 import TimelineWriteModal from "@/components/timeline/TimelineWriteModal";
-import TimelineCard from "@/components/common/TimelineCard";
+import TimelineCard from "@/components/common/TimeLineCard";
 
 interface Post {
     id: number;

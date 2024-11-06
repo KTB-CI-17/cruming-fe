@@ -1,6 +1,6 @@
 import { View, StyleSheet, FlatList, ActivityIndicator } from "react-native";
-import TimelineCard from "@/components/common/TimelineCard";
 import React, { useState, useEffect } from "react";
+import TimelineCard from "@/components/common/TimeLineCard";
 
 interface TimelinePost {
     id: number;
