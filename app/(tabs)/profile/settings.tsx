@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/api/context/AuthContext';
 
 export default function SettingsPage() {
     const router = useRouter();
+    const { logout } = useAuth();
 
     const handleLogout = () => {
         Alert.alert(
@@ -16,10 +18,20 @@ export default function SettingsPage() {
                 },
                 {
                     text: "로그아웃",
-                    onPress: () => {
-                        // 로그아웃 처리
-                        console.log("로그아웃 처리");
-                        // router.replace('/(auth)/login');
+                    onPress: async () => {
+                        try {
+                            await logout();
+                            // 로그아웃 후 로그인 페이지로 이동
+                            // AuthContext의 useEffect에서 자동으로 처리되지만,
+                            // UX를 위해 즉시 이동하도록 추가
+                            router.replace('/login');
+                        } catch (error) {
+                            console.error('Logout failed:', error);
+                            Alert.alert(
+                                "오류",
+                                "로그아웃 중 문제가 발생했습니다. 다시 시도해주세요."
+                            );
+                        }
                     }
                 }
             ]
@@ -41,7 +53,7 @@ export default function SettingsPage() {
                     onPress: () => {
                         // 회원 탈퇴 처리
                         console.log("회원 탈퇴 처리");
-                        // router.replace('/(auth)/login');
+                        // router.replace('/login');
                     }
                 }
             ]
@@ -76,6 +88,7 @@ export default function SettingsPage() {
     );
 }
 
+// styles는 동일함
 const styles = StyleSheet.create({
     container: {
         flex: 1,

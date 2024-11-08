@@ -4,14 +4,19 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
+import { useRouter, Slot } from 'expo-router';
 import CustomHeader from "@/components/CustomHeader";
+import { AuthProvider, useAuth } from '@/api/context/AuthContext';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayoutNav() {
     const [loaded] = useFonts({
         SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     });
+
+    const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
 
     useEffect(() => {
         if (loaded) {
@@ -19,8 +24,18 @@ export default function RootLayout() {
         }
     }, [loaded]);
 
-    if (!loaded) {
-        return null;
+    useEffect(() => {
+        const checkAuth = async () => {
+            if (!authLoading && loaded && !user) {
+                router.replace('/login');
+            }
+        };
+
+        checkAuth();
+    }, [user, authLoading, loaded]);
+
+    if (!loaded || authLoading) {
+        return <Slot />;
     }
 
     return (
@@ -36,7 +51,22 @@ export default function RootLayout() {
                 }}
             >
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen
+                    name="login"
+                    options={{
+                        headerShown: false,
+                        presentation: 'fullScreenModal',
+                    }}
+                />
             </Stack>
         </SafeAreaProvider>
+    );
+}
+
+export default function RootLayout() {
+    return (
+        <AuthProvider>
+            <RootLayoutNav />
+        </AuthProvider>
     );
 }
