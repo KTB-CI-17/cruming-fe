@@ -27,7 +27,6 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
     const captureViewRef = React.useRef(null);
     const screenWidth = Dimensions.get('window').width;
 
-    // 이미지 크기 계산
     useEffect(() => {
         if (!layoutInfo) return;
 
@@ -108,6 +107,30 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
         }
     };
 
+    const renderHoldLabel = (index: number, scaledCoords: any) => {
+        if (index === startHold || index === endHold) {
+            const isStart = index === startHold;
+            return (
+                <View style={[
+                    styles.holdLabel,
+                    {
+                        left: scaledCoords.left,
+                        top: scaledCoords.top - 25, // 홀드 위에 표시
+                        backgroundColor: isStart ? '#4CAF50' : '#2196F3'
+                    }
+                ]}>
+                    <Text style={[
+                        styles.holdLabelText,
+                        { color: 'white' }
+                    ]}>
+                        {isStart ? '시작' : '종료'}
+                    </Text>
+                </View>
+            );
+        }
+        return null;
+    };
+
     const getHeaderText = () => {
         switch (selectionStep) {
             case 'initial':
@@ -146,22 +169,16 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
                 }
             }
 
-            // 버튼 숨기기
             setShowSaveButtons(false);
-
-            // 잠시 대기하여 버튼이 UI에서 사라지게 함
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // 현재 화면을 이미지로 캡처
             const capturedUri = await captureRef(captureViewRef, {
                 format: 'jpg',
                 quality: 1,
             });
 
-            // 버튼 다시 표시
             setShowSaveButtons(true);
 
-            // 갤러리에 저장
             const asset = await MediaLibrary.createAssetAsync(capturedUri);
             await MediaLibrary.createAlbumAsync('ClimbingProblems', asset, false);
 
@@ -259,6 +276,7 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
                                         onPress={() => selectionStep !== 'complete' && handleHoldPress(index)}
                                         activeOpacity={0.7}
                                     />
+                                    {renderHoldLabel(index, scaledCoords)}
                                 </View>
                             );
                         })
@@ -302,8 +320,8 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
 
 const styles = StyleSheet.create({
     overlayButtonContainer: {
-        position: 'absolute',  // 절대 위치로 설정
-        bottom: 0,            // 하단에 배치
+        position: 'absolute',
+        bottom: 0,
         left: 0,
         right: 0,
         flexDirection: 'row',
