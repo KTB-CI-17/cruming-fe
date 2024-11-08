@@ -29,7 +29,6 @@ interface PostRequest {
     title: string;
     content: string;
     category: Category;
-    visibility: Visibility;
 }
 
 export default function NewPost() {
@@ -68,7 +67,6 @@ export default function NewPost() {
                                 title: title.trim(),
                                 content: content.trim(),
                                 category: Category.GENERAL,
-                                visibility: Visibility.PRIVATE
                             };
 
                             console.log('Request Data:', postRequestData);

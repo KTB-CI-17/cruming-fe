@@ -1,63 +1,145 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
+import * as FileSystem from 'expo-file-system';
 import HoldAnalysisLoading from "@/components/problems/HoldAnalysisLoading";
 import HoldAnalysisResult from '@/components/problems/HoldAnalysisResult';
+import { AnalysisResponse } from "@/api/types/holds";
 
 export default function HoldQuest() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [analysisComplete, setAnalysisComplete] = useState(false);
+    const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(null);
 
     const pickImage = async () => {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        try {
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-        if (!permissionResult.granted) {
-            alert('갤러리 접근 권한이 필요합니다.');
-            return;
-        }
+            if (!permissionResult.granted) {
+                Alert.alert('권한 오류', '갤러리 접근 권한이 필요합니다.');
+                return;
+            }
 
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            quality: 1,
-        });
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 1,
+            });
 
-        if (!result.canceled) {
-            setSelectedImage(result.assets[0].uri);
-            setAnalysisComplete(false);
+            if (!result.canceled) {
+                setSelectedImage(result.assets[0].uri);
+                setAnalysisComplete(false);
+                setAnalysisResult(null);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+            Alert.alert('오류', '이미지를 선택하는 중 문제가 발생했습니다.');
         }
     };
 
-    const handleSubmit = () => {
-        if (selectedImage) {
-            setIsLoading(true);
-            // 로딩 화면을 잠시 보여주기 위한 타이머
-            setTimeout(() => {
-                setIsLoading(false);
+    const handleSubmit = async () => {
+        if (!selectedImage) return;
+
+        setIsLoading(true);
+        setAnalysisComplete(false);
+
+        try {
+            const formData = new FormData();
+
+            const fileInfo = await FileSystem.getInfoAsync(selectedImage);
+
+            if (!fileInfo.exists) {
+                throw new Error('File does not exist');
+            }
+
+            formData.append('file', {
+                uri: Platform.OS === 'android' ? selectedImage : selectedImage.replace('file://', ''),
+                type: 'image/jpeg',
+                name: 'image.jpg',
+            } as any);
+
+            console.log('Sending request...');
+
+            const response = await fetch('http://3.35.176.227:8000/detect', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                }
+            });
+
+            console.log('Response status:', response.status);
+            const responseText = await response.text();
+            console.log('Raw response:', responseText);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
+            }
+
+            try {
+                const data = JSON.parse(responseText);
+                console.log('Parsed data:', data);
+
+                // API 응답 형식에 맞게 변환
+                const formattedResult: AnalysisResponse = {
+                    image_path: selectedImage,
+                    detections: data.holds || [] // holds 배열을 detections로 사용
+                };
+
+                console.log('Formatted result:', formattedResult);
+                setAnalysisResult(formattedResult);
                 setAnalysisComplete(true);
-            }, 2000);
+            } catch (parseError) {
+                console.error('JSON parsing error:', parseError);
+                throw new Error('Invalid response format');
+            }
+        } catch (error) {
+            console.error('Error during image analysis:', error);
+            Alert.alert(
+                '오류 발생',
+                '이미지 분석 중 문제가 발생했습니다. 다시 시도해주세요.'
+            );
+            setAnalysisComplete(false);
+            setAnalysisResult(null);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     useFocusEffect(
         useCallback(() => {
-            setSelectedImage(null);
-            setIsLoading(false);
-            setAnalysisComplete(false);
+            return () => {
+                setSelectedImage(null);
+                setIsLoading(false);
+                setAnalysisComplete(false);
+                setAnalysisResult(null);
+            };
         }, [])
     );
+
+    console.log('Current state:', {
+        isLoading,
+        analysisComplete,
+        hasAnalysisResult: !!analysisResult,
+        hasSelectedImage: !!selectedImage
+    });
 
     if (isLoading) {
         return <HoldAnalysisLoading />;
     }
 
-    if (analysisComplete && selectedImage) {
-        return <HoldAnalysisResult imageUri={selectedImage} />;
+    if (analysisComplete && analysisResult && selectedImage) {
+        console.log('Rendering analysis result with:', analysisResult);
+        return (
+            <HoldAnalysisResult
+                imageUri={selectedImage}
+                analysisResult={analysisResult}
+            />
+        );
     }
 
-    // styles 부분은 동일
     return (
         <View style={styles.container}>
             <TouchableOpacity
