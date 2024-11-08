@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, Platform, Dimensions, LayoutChangeEvent, Text, Alert } from 'react-native';
-import { GestureHandlerRootView, PinchGestureHandler } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import * as MediaLibrary from 'expo-media-library';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { captureRef } from 'react-native-view-shot';
 import { useRouter } from 'expo-router';
 import { Props, ImageInfo } from '@/api/types/hold-types';
 import { AnalysisResponse } from "@/api/types/holds";
@@ -24,21 +22,10 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
     const [imageInfo, setImageInfo] = useState<ImageInfo | null>(null);
     const [layoutInfo, setLayoutInfo] = useState<{ width: number; height: number } | null>(null);
     const [selectionStep, setSelectionStep] = useState<SelectionStep>('initial');
+    const [showSaveButtons, setShowSaveButtons] = useState(true);
 
-    const scale = useSharedValue(1);
-    const translateX = useSharedValue(0);
-    const translateY = useSharedValue(0);
-
+    const captureViewRef = React.useRef(null);
     const screenWidth = Dimensions.get('window').width;
-
-    // 애니메이션 스타일
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [
-            { translateX: translateX.value },
-            { translateY: translateY.value },
-            { scale: scale.value },
-        ],
-    }));
 
     // 이미지 크기 계산
     useEffect(() => {
@@ -99,12 +86,6 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
         setLayoutInfo({ width, height });
     };
 
-    const onPinchEvent = ({ nativeEvent }: any) => {
-        scale.value = Math.max(1, Math.min(5, nativeEvent.scale));
-        translateX.value = nativeEvent.focalX;
-        translateY.value = nativeEvent.focalY;
-    };
-
     const handleHoldPress = (index: number) => {
         switch (selectionStep) {
             case 'initial':
@@ -157,7 +138,6 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
 
     const handleDownload = async () => {
         try {
-            // 권한 확인
             if (!permissionResponse?.granted) {
                 const permission = await requestPermission();
                 if (!permission.granted) {
@@ -166,18 +146,25 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
                 }
             }
 
-            // 현재 이미지 처리
-            const manipResult = await manipulateAsync(
-                imageUri,
-                [], // 여기에 필요한 이미지 처리 작업을 추가할 수 있습니다
-                { compress: 1, format: SaveFormat.JPEG }
-            );
+            // 버튼 숨기기
+            setShowSaveButtons(false);
+
+            // 잠시 대기하여 버튼이 UI에서 사라지게 함
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // 현재 화면을 이미지로 캡처
+            const capturedUri = await captureRef(captureViewRef, {
+                format: 'jpg',
+                quality: 1,
+            });
+
+            // 버튼 다시 표시
+            setShowSaveButtons(true);
 
             // 갤러리에 저장
-            const asset = await MediaLibrary.createAssetAsync(manipResult.uri);
+            const asset = await MediaLibrary.createAssetAsync(capturedUri);
             await MediaLibrary.createAlbumAsync('ClimbingProblems', asset, false);
 
-            // 성공 메시지
             Alert.alert('저장 완료', '이미지가 갤러리에 저장되었습니다.');
 
             console.log('Download completed:', {
@@ -190,19 +177,17 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
         } catch (error) {
             console.error('Download failed:', error);
             Alert.alert('저장 실패', '이미지 저장에 실패했습니다.');
+            setShowSaveButtons(true);
         }
     };
 
     const handleCreatePost = () => {
-        // 문제 생성 데이터를 콘솔에 출력
         console.log('Problem creation data:', {
             imageUri,
             selectedHolds,
             startHold,
             endHold
         });
-
-        // 게시글 작성 페이지로 이동
         router.push('/community/new');
     };
 
@@ -223,42 +208,42 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
     return (
         <View style={styles.mainContainer}>
             <View style={styles.headerContainer}>
-                <Text style={styles.headerText}>
-                    {getHeaderText()}
-                </Text>
+                <Text style={styles.headerText}>{getHeaderText()}</Text>
             </View>
-            <GestureHandlerRootView style={styles.container}>
+
+            <View
+                ref={captureViewRef}
+                style={styles.captureContainer}
+            >
                 <View style={styles.imageContainer} onLayout={onLayout}>
-                    <PinchGestureHandler onGestureEvent={onPinchEvent}>
-                        <Animated.View style={[styles.animatedContainer, animatedStyle]}>
-                            <Image
-                                source={{ uri: imageUri }}
-                                style={[
-                                    styles.image,
-                                    imageInfo && {
-                                        width: imageInfo.displayWidth,
-                                        height: imageInfo.displayHeight,
-                                        marginLeft: imageInfo.offsetX,
-                                        marginTop: imageInfo.offsetY,
-                                    }
-                                ]}
-                                resizeMode="contain"
-                            />
-                            {imageInfo && analysisResult?.detections && analysisResult.detections.map((detection, index) => {
-                                if (!detection.coordinates) return null;
+                    <Image
+                        source={{ uri: imageUri }}
+                        style={[
+                            styles.image,
+                            imageInfo && {
+                                width: imageInfo.displayWidth,
+                                height: imageInfo.displayHeight,
+                                marginLeft: imageInfo.offsetX,
+                                marginTop: imageInfo.offsetY,
+                            }
+                        ]}
+                        resizeMode="contain"
+                    />
+                    {imageInfo && analysisResult?.detections &&
+                        analysisResult.detections.map((detection, index) => {
+                            if (!detection.coordinates) return null;
 
-                                const scaledCoords = calculateScaledCoordinates(detection.coordinates);
+                            const scaledCoords = calculateScaledCoordinates(detection.coordinates);
 
-                                // 각 단계별로 표시할 홀드 필터링
-                                const shouldShow = selectionStep === 'initial' ||
-                                    (selectionStep !== 'complete' && selectedHolds.includes(index)) ||
-                                    (selectionStep === 'complete' && (selectedHolds.includes(index) || index === startHold || index === endHold));
+                            const shouldShow = selectionStep === 'initial' ||
+                                (selectionStep !== 'complete' && selectedHolds.includes(index)) ||
+                                (selectionStep === 'complete' && (selectedHolds.includes(index) || index === startHold || index === endHold));
 
-                                if (!shouldShow) return null;
+                            if (!shouldShow) return null;
 
-                                return (
+                            return (
+                                <View key={index}>
                                     <TouchableOpacity
-                                        key={index}
                                         style={[
                                             styles.holdButton,
                                             {
@@ -271,18 +256,60 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
                                             index === startHold && styles.startHold,
                                             index === endHold && styles.endHold,
                                         ]}
-                                        onPress={() => handleHoldPress(index)}
+                                        onPress={() => selectionStep !== 'complete' && handleHoldPress(index)}
                                         activeOpacity={0.7}
                                     />
-                                );
-                            })}
-                        </Animated.View>
-                    </PinchGestureHandler>
+                                    {selectionStep === 'complete' && (
+                                        <>
+                                            {index === startHold && (
+                                                <View style={[
+                                                    styles.holdLabel,
+                                                    {
+                                                        left: scaledCoords.left + (scaledCoords.width / 2) - 20,
+                                                        top: scaledCoords.top - 25,
+                                                    }
+                                                ]}>
+                                                    <Text style={[styles.holdLabelText, { color: '#4CAF50' }]}>시작</Text>
+                                                </View>
+                                            )}
+                                            {index === endHold && (
+                                                <View style={[
+                                                    styles.holdLabel,
+                                                    {
+                                                        left: scaledCoords.left + (scaledCoords.width / 2) - 20,
+                                                        top: scaledCoords.top - 25,
+                                                    }
+                                                ]}>
+                                                    <Text style={[styles.holdLabelText, { color: '#2196F3' }]}>종료</Text>
+                                                </View>
+                                            )}
+                                        </>
+                                    )}
+                                </View>
+                            );
+                        })
+                    }
+                    {selectionStep === 'complete' && showSaveButtons && (
+                        <View style={styles.overlayButtonContainer}>
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.downloadButton]}
+                                onPress={handleDownload}
+                            >
+                                <Text style={[styles.buttonText, { color: '#4CAF50' }]}>다운로드</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.postButton]}
+                                onPress={handleCreatePost}
+                            >
+                                <Text style={[styles.buttonText, { color: '#6366f1' }]}>게시글 작성하기</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
-            </GestureHandlerRootView>
+            </View>
 
-            <View style={styles.buttonContainer}>
-                {selectionStep !== 'complete' ? (
+            {selectionStep !== 'complete' && (
+                <View style={styles.buttonContainer}>
                     <TouchableOpacity
                         style={[
                             styles.nextButton,
@@ -291,25 +318,10 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
                         onPress={handleNext}
                         disabled={!isNextButtonEnabled()}
                     >
-                        <Text style={styles.buttonText}>다음</Text>
+                        <Text style={styles.nextButtonText}>다음</Text>
                     </TouchableOpacity>
-                ) : (
-                    <>
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.downloadButton]}
-                            onPress={handleDownload}
-                        >
-                            <Text style={styles.buttonText}>다운로드</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.postButton]}
-                            onPress={handleCreatePost}
-                        >
-                            <Text style={styles.buttonText}>게시글 작성하기</Text>
-                        </TouchableOpacity>
-                    </>
-                )}
-            </View>
+                </View>
+            )}
         </View>
     );
 }
@@ -317,6 +329,7 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
+        backgroundColor: 'white',
     },
     headerContainer: {
         paddingVertical: 16,
@@ -331,51 +344,56 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: '#333',
     },
-    container: {
+    captureContainer: {
         flex: 1,
         backgroundColor: 'white',
     },
     imageContainer: {
         flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-    },
-    animatedContainer: {
-        width: '100%',
-        height: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
+        position: 'relative',
     },
     image: {
         position: 'absolute',
         backgroundColor: 'transparent',
-        ...Platform.select({
-            ios: {
-                zIndex: 1,
-            },
-            android: {
-                elevation: 1,
-            },
-        }),
     },
     holdButton: {
         position: 'absolute',
         borderWidth: 2,
         borderColor: 'transparent',
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        ...Platform.select({
-            ios: {
-                zIndex: 2,
-            },
-            android: {
-                elevation: 2,
-            },
-        }),
+        backgroundColor: 'transparent',
     },
     selectedHold: {
         borderColor: 'red',
-        backgroundColor: 'rgba(255, 0, 0, 0.2)',
+    },
+    startHold: {
+        borderColor: '#4CAF50',
+    },
+    endHold: {
+        borderColor: '#2196F3',
+    },
+    holdLabel: {
+        position: 'absolute',
+        padding: 4,
+        borderRadius: 4,
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    holdLabelText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    overlayButtonContainer: {
+        position: 'absolute',
+        bottom: 20,
+        left: 20,
+        right: 20,
     },
     buttonContainer: {
         padding: 20,
@@ -387,32 +405,30 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
     },
+    nextButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
     actionButton: {
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
         marginBottom: 10,
+        borderWidth: 1,
+        backgroundColor: 'white',
     },
     downloadButton: {
-        backgroundColor: '#4CAF50',
+        borderColor: '#4CAF50',
     },
     postButton: {
-        backgroundColor: '#6366f1',
+        borderColor: '#6366f1',
     },
     disabledButton: {
         backgroundColor: '#ccc',
     },
     buttonText: {
-        color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
-    },
-    startHold: {
-        borderColor: '#4CAF50',
-        backgroundColor: 'rgba(76, 175, 80, 0.2)',
-    },
-    endHold: {
-        borderColor: '#2196F3',
-        backgroundColor: 'rgba(33, 150, 243, 0.2)',
     },
 });
