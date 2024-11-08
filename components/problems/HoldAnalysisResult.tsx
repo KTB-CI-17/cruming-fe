@@ -259,32 +259,6 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
                                         onPress={() => selectionStep !== 'complete' && handleHoldPress(index)}
                                         activeOpacity={0.7}
                                     />
-                                    {selectionStep === 'complete' && (
-                                        <>
-                                            {index === startHold && (
-                                                <View style={[
-                                                    styles.holdLabel,
-                                                    {
-                                                        left: scaledCoords.left + (scaledCoords.width / 2) - 20,
-                                                        top: scaledCoords.top - 25,
-                                                    }
-                                                ]}>
-                                                    <Text style={[styles.holdLabelText, { color: '#4CAF50' }]}>시작</Text>
-                                                </View>
-                                            )}
-                                            {index === endHold && (
-                                                <View style={[
-                                                    styles.holdLabel,
-                                                    {
-                                                        left: scaledCoords.left + (scaledCoords.width / 2) - 20,
-                                                        top: scaledCoords.top - 25,
-                                                    }
-                                                ]}>
-                                                    <Text style={[styles.holdLabelText, { color: '#2196F3' }]}>종료</Text>
-                                                </View>
-                                            )}
-                                        </>
-                                    )}
                                 </View>
                             );
                         })
@@ -295,13 +269,13 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
                                 style={[styles.actionButton, styles.downloadButton]}
                                 onPress={handleDownload}
                             >
-                                <Text style={[styles.buttonText, { color: '#4CAF50' }]}>다운로드</Text>
+                                <Text style={[styles.buttonText, { color: 'black' }]}>다운로드</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.actionButton, styles.postButton]}
                                 onPress={handleCreatePost}
                             >
-                                <Text style={[styles.buttonText, { color: '#6366f1' }]}>게시글 작성하기</Text>
+                                <Text style={[styles.buttonText, { color: 'white' }]}>게시글 작성하기</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -327,6 +301,40 @@ export default function HoldAnalysisResult({ imageUri, analysisResult }: HoldAna
 }
 
 const styles = StyleSheet.create({
+    overlayButtonContainer: {
+        position: 'absolute',  // 절대 위치로 설정
+        bottom: 0,            // 하단에 배치
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        padding: 20,
+        backgroundColor: 'white',
+        gap: 12,
+    },
+    actionButton: {
+        flex: 1,
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    downloadButton: {
+        backgroundColor: '#E9ECEF',
+    },
+    postButton: {
+        backgroundColor: '#735BF2',
+    },
+    downloadButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#495057',
+    },
+    postButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: 'white',
+    },
     mainContainer: {
         flex: 1,
         backgroundColor: 'white',
@@ -389,12 +397,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
     },
-    overlayButtonContainer: {
-        position: 'absolute',
-        bottom: 20,
-        left: 20,
-        right: 20,
-    },
     buttonContainer: {
         padding: 20,
         backgroundColor: 'white',
@@ -409,20 +411,6 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
-    },
-    actionButton: {
-        padding: 15,
-        borderRadius: 10,
-        alignItems: 'center',
-        marginBottom: 10,
-        borderWidth: 1,
-        backgroundColor: 'white',
-    },
-    downloadButton: {
-        borderColor: '#4CAF50',
-    },
-    postButton: {
-        borderColor: '#6366f1',
     },
     disabledButton: {
         backgroundColor: '#ccc',
