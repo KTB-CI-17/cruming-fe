@@ -1,32 +1,14 @@
 import { useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    ScrollView,
-    TouchableOpacity,
     StyleSheet,
+    ScrollView,
     KeyboardAvoidingView,
     Platform,
-    Alert
+    Alert, TouchableOpacity, Text
 } from 'react-native';
 import { router } from 'expo-router';
-import ImageUploadArea from '@/components/common/ImageUploadArea';
-import axios from 'axios';
-import { API_URL } from '@/api/config/index';
-import { CreatePostData, ApiResponse } from '@/api/types/community/post';
-
-// 서버의 enum 값과 정확히 일치하도록 설정
-enum Category {
-    GENERAL = 'GENERAL',
-    PROBLEM = 'PROBLEM'
-}
-
-interface PostRequest {
-    title: string;
-    content: string;
-    category: Category;
-}
+import PostFormContent from '@/components/community/PostFormContent';
+import { PostSubmitService } from '@/api/services/community/postSubmitService';
 
 export default function NewPost() {
     const [title, setTitle] = useState('');
@@ -58,27 +40,7 @@ export default function NewPost() {
                     onPress: async () => {
                         try {
                             setIsLoading(true);
-
-                            // 기존 서버 요청 구조 유지
-                            const postRequestData: PostRequest = {
-                                title: title.trim(),
-                                content: content.trim(),
-                                category: Category.GENERAL,
-                            };
-
-                            console.log('Request Data:', postRequestData);
-
-                            const response = await axios<ApiResponse<any>>({
-                                method: 'post',
-                                url: `${API_URL}/api/v1/posts`,
-                                data: postRequestData,
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json',
-                                },
-                                timeout: 10000
-                            });
-
+                            const response = await PostSubmitService.submit(title, content);
                             console.log('Response:', response.data);
 
                             Alert.alert('성공', '게시글이 등록되었습니다.', [
@@ -95,7 +57,6 @@ export default function NewPost() {
                                 headers: error.response?.headers,
                                 requestData: error.config?.data,
                                 requestHeaders: error.config?.headers,
-                                url: `${API_URL}/api/v1/posts`,
                                 platform: Platform.OS
                             });
 
@@ -125,41 +86,15 @@ export default function NewPost() {
             style={styles.container}
         >
             <ScrollView style={styles.scrollContainer}>
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        style={styles.titleInput}
-                        placeholder="제목을 입력하세요"
-                        placeholderTextColor="#8F9BB3"
-                        value={title}
-                        onChangeText={setTitle}
-                        maxLength={100}
-                        editable={!isLoading}
-                    />
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        style={styles.contentInput}
-                        multiline
-                        placeholder="내용을 입력하세요"
-                        placeholderTextColor="#8F9BB3"
-                        value={content}
-                        onChangeText={setContent}
-                        textAlignVertical="top"
-                        editable={!isLoading}
-                    />
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.imageSection}>
-                    <ImageUploadArea
-                        images={images}
-                        onImagesChange={setImages}
-                    />
-                </View>
+                <PostFormContent
+                    title={title}
+                    content={content}
+                    images={images}
+                    onTitleChange={setTitle}
+                    onContentChange={setContent}
+                    onImagesChange={setImages}
+                    isLoading={isLoading}
+                />
             </ScrollView>
 
             <TouchableOpacity
@@ -185,28 +120,6 @@ const styles = StyleSheet.create({
     },
     scrollContainer: {
         flex: 1,
-    },
-    inputContainer: {
-        padding: 16,
-    },
-    titleInput: {
-        fontSize: 16,
-        color: '#222B45',
-        padding: 6,
-        minHeight: 20,
-    },
-    contentInput: {
-        fontSize: 16,
-        color: '#222B45',
-        padding: 6,
-        minHeight: 300,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: '#E4E9F2',
-    },
-    imageSection: {
-        padding: 12,
     },
     submitButton: {
         backgroundColor: '#735BF2',
