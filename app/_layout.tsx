@@ -15,7 +15,7 @@ function RootLayoutNav() {
         SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     });
 
-    const { user, loading: authLoading } = useAuth();
+    const { isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -26,13 +26,13 @@ function RootLayoutNav() {
 
     useEffect(() => {
         const checkAuth = async () => {
-            if (!authLoading && loaded && !user) {
+            if (!authLoading && loaded && !isAuthenticated) {
                 router.replace('/login');
             }
         };
 
         checkAuth();
-    }, [user, authLoading, loaded]);
+    }, [isAuthenticated, authLoading, loaded]);
 
     if (!loaded || authLoading) {
         return <Slot />;

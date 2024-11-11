@@ -68,14 +68,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const token = await KakaoLogin.login();
 
                 console.log('카카오 로그인 성공:', JSON.stringify(token));
-                await exchangeSocialToken(token.accessToken, provider);
+                await exchangeSocialToken(token.accessToken, provider.toUpperCase());
             } else if (provider === 'naver') {
                 const { failureResponse, successResponse } = await NaverLogin.login();
                 setSuccessResponse(successResponse);
                 setFailureResponse(failureResponse);
                 console.log('네이버 로그인 성공:', JSON.stringify(successResponse));
                 if (successResponse?.accessToken) {
-                    await exchangeSocialToken(successResponse.accessToken, provider);
+                    await exchangeSocialToken(successResponse.accessToken, provider.toUpperCase());
                 }
             }
             // const dummyUser: User = {
@@ -97,20 +97,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const token = await getValidToken();
       if (token) {
+        console.log('토큰 유효성 검사 성공:', token);
         setIsAuthenticated(true);
         router.replace('/(tabs)/');
       } else {
-        router.replace('/(tabs)');
+        console.log('토큰 유효성 검사 실패');
+        router.replace('/login');
       }
     } catch (error) {
       console.error('Error checking auth:', error);
-      router.replace('/(tabs)');
+      router.replace('/login');
     }
   }
 
   async function exchangeSocialToken(socialToken: string, provider: string) {
     try {
-      const response = await fetch('http://내컴퓨터공인IP:8080/api/v1/auth/token', {
+      const response = await fetch('http://192.168.45.179:8080/api/v1/auth/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,8 +144,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const now = Date.now();
 
       if (tokenData.expiresAt - now < TOKEN_REFRESH_THRESHOLD) {
-        // 서버에 토큰 갱신 요청
-        const response = await fetch('http://내컴퓨터공인IP:8080/api/v1/auth/token/refresh', {
+        const response = await fetch('http://192.168.45.179:8080/api/v1/auth/token/refresh', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -153,9 +154,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }),
         });
 
-        if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          console.log('Token is invalid or expired');
           await logout();
+          router.replace('/login');
           return null;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Token refresh failed: ${response.status}`);
         }
 
         const newTokenData: TokenData = await response.json();
@@ -166,6 +173,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return tokenData.accessToken;
     } catch (error) {
       console.error('Error getting valid token:', error);
+      await logout();
+      router.replace('/login');
       return null;
     }
   }
@@ -174,7 +183,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await AsyncStorage.removeItem('tokenData');
       setIsAuthenticated(false);
-      router.replace('/(tabs)');
+      router.replace('/login');
     } catch (error) {
       console.error('Error logging out:', error);
     }
