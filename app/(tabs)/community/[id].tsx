@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import PostAuthor from '@/components/common/PostAuthor';
 import PostContent from '@/components/common/PostContent';
 import PostReply from '@/components/common/PostReply';
-import type { Post } from '@/api/types/post';
+import type { Post } from '@/api/types/community/post';
 
 export default function PostDetailPage() {
     const { id } = useLocalSearchParams<{ id: string }>();

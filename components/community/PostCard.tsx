@@ -1,22 +1,28 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
 import { useRouter } from 'expo-router';
+import { ListPost } from "@/api/types/community/post";
+import { format, parseISO } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
-type PostCard = {
-    id: number;
-    title: string;
-    date: string;
-    isNew?: boolean;
-    isHot?: boolean;
-    category?: string; // 카테고리 추가 (선택적)
-}
-
-type PostCardProps = {
-    post: PostCard;
+interface PostCardProps {
+    post: ListPost;
 }
 
 export default function PostCard({ post }: PostCardProps) {
     const router = useRouter();
+
+    // 날짜 포맷팅 함수
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return '';
+
+        try {
+            return format(parseISO(dateString), 'yyyy. MM. dd', { locale: ko });
+        } catch (error) {
+            console.error('Date parsing error:', error);
+            return dateString; // 파싱 실패시 원본 문자열 반환
+        }
+    };
 
     const handlePress = () => {
         router.push(`/community/${post.id}`);
@@ -24,7 +30,6 @@ export default function PostCard({ post }: PostCardProps) {
 
     return (
         <TouchableOpacity
-            key={post.id}
             style={styles.postItem}
             onPress={handlePress}
             activeOpacity={0.7}
@@ -43,22 +48,13 @@ export default function PostCard({ post }: PostCardProps) {
                     )}
                     <Text style={styles.title} numberOfLines={1}>{post.title}</Text>
                 </View>
-                <Text style={styles.date}>{post.date}</Text>
+                <Text style={styles.date}>{formatDate(post.createdAt)}</Text>
             </View>
         </TouchableOpacity>
     );
 }
 
-
 const styles = StyleSheet.create({
-    container: {
-        backgroundColor: 'white',
-    },
-    scrollView: {
-    },
-    postsContainer: {
-        paddingHorizontal: 16,
-    },
     postItem: {
         paddingVertical: 16,
         borderBottomWidth: 1,

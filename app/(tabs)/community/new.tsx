@@ -14,15 +14,12 @@ import { router } from 'expo-router';
 import ImageUploadArea from '@/components/common/ImageUploadArea';
 import axios from 'axios';
 import { API_URL } from '@/api/config/index';
+import { CreatePostData, ApiResponse } from '@/api/types/community/post';
 
 // 서버의 enum 값과 정확히 일치하도록 설정
 enum Category {
     GENERAL = 'GENERAL',
     PROBLEM = 'PROBLEM'
-}
-
-enum Visibility {
-    PRIVATE = 'PRIVATE',
 }
 
 interface PostRequest {
@@ -62,7 +59,7 @@ export default function NewPost() {
                         try {
                             setIsLoading(true);
 
-                            // 요청 데이터 구성
+                            // 기존 서버 요청 구조 유지
                             const postRequestData: PostRequest = {
                                 title: title.trim(),
                                 content: content.trim(),
@@ -71,7 +68,7 @@ export default function NewPost() {
 
                             console.log('Request Data:', postRequestData);
 
-                            const response = await axios({
+                            const response = await axios<ApiResponse<any>>({
                                 method: 'post',
                                 url: `${API_URL}/api/v1/posts`,
                                 data: postRequestData,
@@ -87,9 +84,7 @@ export default function NewPost() {
                             Alert.alert('성공', '게시글이 등록되었습니다.', [
                                 {
                                     text: '확인',
-                                    onPress: () => {
-                                        router.back();
-                                    }
+                                    onPress: () => router.back()
                                 }
                             ]);
                         } catch (error: any) {
@@ -111,7 +106,6 @@ export default function NewPost() {
                                 } else if (error.response.status === 500) {
                                     errorMessage = '서버 오류가 발생했습니다.';
                                 }
-                                // 서버에서 온 상세 에러 로깅
                                 console.error('Server Error Details:', error.response.data);
                             }
 
@@ -184,7 +178,6 @@ export default function NewPost() {
     );
 }
 
-// styles 부분은 동일
 const styles = StyleSheet.create({
     container: {
         flex: 1,

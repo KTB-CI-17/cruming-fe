@@ -1,147 +1,101 @@
-import { View, StyleSheet, FlatList, ActivityIndicator } from "react-native";
+import { View, StyleSheet, FlatList, ActivityIndicator, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import PostCard from "@/components/community/PostCard";
 import SearchBar from "@/components/common/SearchBar";
-import React, { useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import AddGeneral from "@/components/community/AddGeneralButton";
-
-interface Post {
-    id: number;
-    title: string;
-    date: string;
-    isHot?: boolean;
-    isNew?: boolean;
-}
-
-interface APIResponse {
-    posts: Post[];
-    meta: {
-        currentPage: number;
-        totalPages: number;
-        hasMore: boolean;
-    };
-}
+import { ListPost } from "@/api/types/community/post";
+import { PostService } from "@/api/services/community/postListService";
 
 const POSTS_PER_PAGE = 10;
 
-const generateDummyPost = (id: number): Post => {
-    const titles = [
-        "암장 민페 썰",
-        "소개팅 가는데 옷 추천 좀..",
-        "운동화 추천해주세요!",
-        "오늘 등반 성공했습니다!",
-        "클라이밍화 세탁 어떻게 하시나요?",
-        "볼더링 시작한지 1개월 됐어요",
-        "클라이밍 실력 안늘 때 꿀팁",
-        "오늘 악력 대박이었음",
-        "홀드 색깔별 난이도 질문",
-        "초보자인데 무릎 아파요",
-        "근육통 완화하는 방법 공유",
-        "클라이밍장 추천해주세요",
-        "오늘 스냅 나갔어요ㅠㅠ",
-        "3개월 만에 6급 성공!"
-    ];
-
-    const today = new Date();
-    const randomDays = Math.floor(Math.random() * 30);  // 최근 30일
-    const postDate = new Date(today);
-    postDate.setDate(postDate.getDate() - randomDays);
-
-    const formattedDate = postDate.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).replace(/\. /g, '. ');
-
-    const isRecent = randomDays <= 2;  // 2일 이내 게시물
-    const isPopular = Math.random() < 0.2;  // 20% 확률로 인기글
-
-    return {
-        id,
-        title: titles[id % titles.length],
-        date: formattedDate,
-        isHot: isPopular && !isRecent,  // 최신글이 아닌 경우에만 인기글 가능
-        isNew: isRecent && !isPopular,  // 인기글이 아닌 경우에만 최신글 가능
-    };
-};
-
-const getDummyAPIResponse = (page: number): APIResponse => {
-    const startIndex = (page - 1) * POSTS_PER_PAGE;
-    const posts = Array(POSTS_PER_PAGE).fill(null).map((_, index) =>
-        generateDummyPost(startIndex + index + 1)
-    );
-
-    return {
-        posts,
-        meta: {
-            currentPage: page,
-            totalPages: 10,  // 총 100개의 게시물
-            hasMore: page < 10
-        }
-    };
-};
-
 export default function General() {
-    const [posts, setPosts] = useState<Post[]>([]);
+    const [posts, setPosts] = useState<ListPost[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [pageNumber, setPageNumber] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
 
-    const fetchPosts = async (page: number, isRefresh: boolean = false) => {
-        if (isLoading || (!hasMore && !isRefresh)) return;
+    const fetchPosts = useCallback(async (page: number, isRefresh: boolean = false) => {
+        // 더 이상 데이터가 없거나 이미 로딩 중이면 중단
+        if ((!hasMore && !isRefresh) || isLoading) return;
 
         try {
             setIsLoading(true);
-            // TODO: 실제 API 호출로 대체
-            // const response = await axios.get(`/api/posts?page=${page}&limit=${POSTS_PER_PAGE}`);
-            const response = getDummyAPIResponse(page);
+            console.log('Fetching page:', page); // 현재 요청하는 페이지 확인
+
+            const response = await PostService.getPosts({
+                page,
+                size: POSTS_PER_PAGE,
+                category: 'GENERAL'
+            });
+
+            console.log('Response:', {
+                content: response.content.length,
+                page: response.pageable.pageNumber,
+                last: response.last
+            }); // 응답 데이터 확인
 
             if (isRefresh) {
-                setPosts(response.posts);
+                setPosts(response.content);
             } else {
-                setPosts(prev => [...prev, ...response.posts]);
+                setPosts(prevPosts => [...prevPosts, ...response.content]);
             }
 
-            setCurrentPage(page);
-            setHasMore(response.meta.hasMore);
+            setHasMore(!response.last);
+            setPageNumber(page);
+
         } catch (error) {
             console.error('Failed to fetch posts:', error);
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    };
+    }, [hasMore, isLoading]);
 
-    const handleRefresh = () => {
-        setIsRefreshing(true);
-        setHasMore(true);
-        setCurrentPage(1);
-        fetchPosts(1, true);
-    };
-
-    const handleLoadMore = () => {
-        if (!isLoading && hasMore) {
-            fetchPosts(currentPage + 1);
-        }
-    };
-
-    // 컴포넌트 마운트 시 첫 페이지 로드
-    React.useEffect(() => {
-        fetchPosts(1, true);
+    useEffect(() => {
+        fetchPosts(0, true);
     }, []);
 
-    const renderFooter = () => {
+    const handleRefresh = useCallback(() => {
+        setIsRefreshing(true);
+        setPageNumber(0);
+        fetchPosts(0, true);
+    }, [fetchPosts]);
+
+    const handleLoadMore = useCallback(() => {
+        console.log('HandleLoadMore called', {
+            isLoading,
+            hasMore,
+            currentPage: pageNumber
+        }); // 디버깅용
+
+        if (!isLoading && hasMore) {
+            const nextPage = pageNumber + 1;
+            console.log('Loading next page:', nextPage); // 다음 페이지 확인
+            fetchPosts(nextPage, false);
+        }
+    }, [isLoading, hasMore, pageNumber, fetchPosts]);
+
+    const renderItem = useCallback(({ item }: { item: ListPost }) => (
+        <PostCard post={item} />
+    ), []);
+
+    const renderFooter = useCallback(() => {
         if (!isLoading) return null;
         return (
             <View style={styles.loadingFooter}>
                 <ActivityIndicator size="small" color="#735BF2" />
             </View>
         );
-    };
+    }, [isLoading]);
 
-    const renderItem = ({ item }: { item: Post }) => (
-        <PostCard post={item} />
-    );
+    if (isLoading && posts.length === 0) {
+        return (
+            <View style={[styles.container, styles.centerContainer]}>
+                <ActivityIndicator size="large" color="#735BF2" />
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -156,6 +110,10 @@ export default function General() {
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={renderFooter}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={5}
+                updateCellsBatchingPeriod={100}
+                windowSize={10}
             />
             <AddGeneral />
         </View>
@@ -167,8 +125,13 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: 'white',
     },
+    centerContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     postsContainer: {
         paddingHorizontal: 16,
+        paddingBottom: 20,
     },
     loadingFooter: {
         paddingVertical: 20,
