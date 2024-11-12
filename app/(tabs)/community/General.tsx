@@ -1,10 +1,12 @@
-import { View, StyleSheet, FlatList, ActivityIndicator, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { View, StyleSheet, FlatList, ActivityIndicator } from "react-native";
 import PostCard from "@/components/community/PostCard";
 import SearchBar from "@/components/common/SearchBar";
+import ListError from "@/components/community/ListError";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import AddGeneral from "@/components/community/AddGeneralButton";
 import { ListPost } from "@/api/types/community/post";
 import { PostService } from "@/api/services/community/postListService";
+import axios from 'axios';
 
 const POSTS_PER_PAGE = 10;
 
@@ -14,26 +16,33 @@ export default function General() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [pageNumber, setPageNumber] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    const cancelPreviousRequest = useCallback(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+    }, []);
 
     const fetchPosts = useCallback(async (page: number, isRefresh: boolean = false) => {
-        // 더 이상 데이터가 없거나 이미 로딩 중이면 중단
-        if ((!hasMore && !isRefresh) || isLoading) return;
+        // 에러 상태에서는 사용자의 명시적인 재시도 없이는 요청하지 않음
+        if ((!isRefresh && error) || (!hasMore && !isRefresh) || (isLoading && !isRefresh)) return;
 
         try {
+            cancelPreviousRequest();
+            abortControllerRef.current = new AbortController();
+
             setIsLoading(true);
-            console.log('Fetching page:', page); // 현재 요청하는 페이지 확인
+            setError(null);
 
             const response = await PostService.getPosts({
                 page,
                 size: POSTS_PER_PAGE,
                 category: 'GENERAL'
-            });
-
-            console.log('Response:', {
-                content: response.content.length,
-                page: response.pageable.pageNumber,
-                last: response.last
-            }); // 응답 데이터 확인
+            }, abortControllerRef.current.signal);
 
             if (isRefresh) {
                 setPosts(response.content);
@@ -43,56 +52,88 @@ export default function General() {
 
             setHasMore(!response.last);
             setPageNumber(page);
+            setIsInitialLoad(false);
 
         } catch (error) {
+            if (axios.isCancel(error)) {
+                return;
+            }
+
+            if (error instanceof Error) {
+                setError('게시글을 불러오는데 실패했습니다.');
+            } else {
+                setError('게시글을 불러오는데 실패했습니다.');
+            }
+            // 에러 발생 시 콘솔에만 자세한 에러 로깅
             console.error('Failed to fetch posts:', error);
+
         } finally {
-            setIsLoading(false);
-            setIsRefreshing(false);
+            if (abortControllerRef.current) {
+                setIsLoading(false);
+                setIsRefreshing(false);
+            }
         }
-    }, [hasMore, isLoading]);
+    }, [hasMore, isLoading, cancelPreviousRequest, error]);
 
     useEffect(() => {
-        fetchPosts(0, true);
-    }, []);
+        // 최초 로드시에만 실행
+        if (isInitialLoad) {
+            fetchPosts(0, true);
+        }
+
+        return () => {
+            cancelPreviousRequest();
+        };
+    }, [isInitialLoad]);
 
     const handleRefresh = useCallback(() => {
+        if (isRefreshing) return;
         setIsRefreshing(true);
         setPageNumber(0);
         fetchPosts(0, true);
-    }, [fetchPosts]);
+    }, [fetchPosts, isRefreshing]);
 
     const handleLoadMore = useCallback(() => {
-        console.log('HandleLoadMore called', {
-            isLoading,
-            hasMore,
-            currentPage: pageNumber
-        }); // 디버깅용
-
-        if (!isLoading && hasMore) {
-            const nextPage = pageNumber + 1;
-            console.log('Loading next page:', nextPage); // 다음 페이지 확인
-            fetchPosts(nextPage, false);
+        if (!isLoading && hasMore && !error) {
+            fetchPosts(pageNumber + 1, false);
         }
-    }, [isLoading, hasMore, pageNumber, fetchPosts]);
+    }, [isLoading, hasMore, pageNumber, fetchPosts, error]);
+
+    const handleRetry = useCallback(() => {
+        if (isLoading) return;
+        fetchPosts(pageNumber, true);
+    }, [fetchPosts, pageNumber, isLoading]);
 
     const renderItem = useCallback(({ item }: { item: ListPost }) => (
         <PostCard post={item} />
     ), []);
 
     const renderFooter = useCallback(() => {
-        if (!isLoading) return null;
+        if (!isLoading || error) return null;
         return (
             <View style={styles.loadingFooter}>
                 <ActivityIndicator size="small" color="#735BF2" />
             </View>
         );
-    }, [isLoading]);
+    }, [isLoading, error]);
 
-    if (isLoading && posts.length === 0) {
+    if (isLoading && posts.length === 0 && !error) {
         return (
             <View style={[styles.container, styles.centerContainer]}>
                 <ActivityIndicator size="large" color="#735BF2" />
+            </View>
+        );
+    }
+
+    if (error && posts.length === 0) {
+        return (
+            <View style={styles.container}>
+                <SearchBar />
+                <ListError
+                    onRetry={handleRetry}
+                    errorMessage={error}
+                />
+                <AddGeneral />
             </View>
         );
     }
