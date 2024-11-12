@@ -43,14 +43,14 @@ function RootLayoutNav() {
             <Stack
                 screenOptions={{
                     contentStyle: { backgroundColor: 'white' },
-                    headerShown: true,
-                    header: () => <CustomHeader />,
-                    headerStyle: {
-                        backgroundColor: 'transparent',
-                    }
                 }}
             >
-                <Stack.Screen name="(tabs)" />
+                <Stack.Screen 
+                    name="(tabs)" 
+                    options={{
+                        header: () => <CustomHeader />,
+                    }}
+                />
                 <Stack.Screen
                     name="login"
                     options={{
