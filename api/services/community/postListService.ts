@@ -1,22 +1,29 @@
-import axios from 'axios';
 import { PostListResponse, PostListParams } from '@/api/types/community/post';
-
-const API_URL = `http://localhost:8080/api/v1/posts`;
+import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
+import { API_URL } from '@/api/config/index';
 
 export const PostService = {
-    getPosts: async ({ page, size, category }: PostListParams): Promise<PostListResponse> => {
+    getPosts: async ({ page, size, category }: PostListParams, signal?: AbortSignal): Promise<PostListResponse> => {
+        const { authFetch } = useAuthenticatedFetch();
         try {
-            const response = await axios.get<PostListResponse>(API_URL, {
-                params: {
-                    page,
-                    size,
-                    category
-                }
+            console.log('Making request with params:', { page, size, category }); // 요청 파라미터 로깅
+
+            const queryParams = new URLSearchParams({
+                page: page.toString(),
+                size: size.toString(),
+                category: category.toString()
+            }).toString();
+
+            const response = await authFetch(`${API_URL}/api/v1/posts?${queryParams}`, {
+                method: 'GET',
+                requireAuth: true,
+                signal
             });
-            console.log('API Response:', response.data);
-            return response.data;
+
+            const data = await response.json();
+            return data;
         } catch (error) {
-            console.error('API Error:', error);
+            console.error('Failed to fetch posts:', error);
             throw error;
         }
     }
