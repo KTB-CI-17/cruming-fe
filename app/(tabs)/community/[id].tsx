@@ -1,7 +1,7 @@
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import {
     View, Text, TouchableOpacity, StyleSheet, ScrollView, Image,
-    Dimensions, TextInput, Alert, ActivityIndicator
+    Dimensions, TextInput, Alert, ActivityIndicator, ActionSheetIOS
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect, useRef } from 'react';
@@ -19,6 +19,41 @@ export default function PostDetailPage() {
     const [imagesCache, setImagesCache] = useState<{[key: string]: string}>({});
     const scrollViewRef = useRef<ScrollView>(null);
     const { authFetch } = useAuthenticatedFetch();
+
+    const showActionSheet = () => {
+        ActionSheetIOS.showActionSheetWithOptions(
+            {
+                options: ['수정', '삭제', '취소'],
+                cancelButtonIndex: 2,
+                destructiveButtonIndex: 1,
+            },
+            (buttonIndex) => {
+                if (buttonIndex === 0) {
+                    handlePostAction(post!.id, 'edit');
+                } else if (buttonIndex === 1) {
+                    showDeleteConfirmation(post!.id);
+                }
+            }
+        );
+    };
+
+    const showDeleteConfirmation = (postId: number) => {
+        Alert.alert(
+            '삭제 확인',
+            '활동 기록을 삭제하시겠습니까?',
+            [
+                {
+                    text: '취소',
+                    style: 'cancel'
+                },
+                {
+                    text: '삭제',
+                    onPress: () => deletePost(postId),
+                    style: 'destructive'
+                }
+            ]
+        );
+    };
 
     useEffect(() => {
         const loadAllImages = async () => {
@@ -49,6 +84,7 @@ export default function PostDetailPage() {
             const response = await authFetch(`${API_URL}/api/v1/posts/${id}`);
             if (!response.ok) throw new Error();
             const data = await response.json();
+            console.log(data);
             setPost(data);
         } catch (error) {
             setError("게시글을 불러오는데 실패했습니다.");
@@ -57,6 +93,44 @@ export default function PostDetailPage() {
             ]);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const deletePost = async (postId: number) => {
+        try {
+            const response = await authFetch(`${API_URL}/api/v1/posts/${postId}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) throw new Error();
+
+            Alert.alert("성공", "활동 기록이 삭제되었습니다.", [
+                { text: "확인", onPress: () => router.back() }
+            ]);
+        } catch (error) {
+            Alert.alert("오류", "삭제에 실패했습니다.");
+        }
+    };
+
+    const handlePostAction = (postId: number, action: 'delete' | 'edit') => {
+        if (action === 'delete') {
+            Alert.alert(
+                "삭제 확인",
+                "활동 기록을 삭제하시겠습니까?",
+                [
+                    {
+                        text: "취소",
+                        style: "cancel"
+                    },
+                    {
+                        text: "삭제",
+                        onPress: () => deletePost(postId),
+                        style: "destructive"
+                    }
+                ]
+            );
+        } else if (action === 'edit') {
+            console.log('수정할 카드 ID:', postId);
+            // TODO: 수정 기능 구현
         }
     };
 
@@ -112,9 +186,11 @@ export default function PostDetailPage() {
                             )}
                         </View>
                     </View>
-                    <TouchableOpacity>
-                        <Ionicons name="ellipsis-horizontal" size={24} color="#666" />
-                    </TouchableOpacity>
+                    {post.isWriter && (
+                        <TouchableOpacity onPress={showActionSheet}>
+                            <Ionicons name="ellipsis-horizontal" size={24} color="#666" />
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 <Text style={styles.title}>{post.title}</Text>
