@@ -2,10 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@/api/config/index';
 import { router } from 'expo-router';
 
-interface FetchOptions extends RequestInit {
-  requireAuth?: boolean;
-}
-
 interface TokenData {
   accessToken: string;
   refreshToken: string;
@@ -43,62 +39,52 @@ export function useAuthenticatedFetch() {
     }
   };
 
-  const authFetch = async (url: string, options: FetchOptions = {}) => {
-    const { requireAuth = true, ...fetchOptions } = options;
-
+  const getValidToken = async () => {
     try {
-      if (requireAuth) {
-        const tokenDataString = await AsyncStorage.getItem('tokenData');
-        if (!tokenDataString) {
-          throw new Error('No token available');
-        }
-
-        const tokenData = JSON.parse(tokenDataString) as TokenData;
-
-        // Check if token needs refresh
-        if (Date.now() >= tokenData.expiresAt - 5 * 60 * 1000) { // 5 minutes buffer
-          const newAccessToken = await refreshAccessToken();
-          tokenData.accessToken = newAccessToken;
-        }
-
-        fetchOptions.headers = {
-          ...fetchOptions.headers,
-          'Authorization': `Bearer ${tokenData.accessToken}`,
-        };
+      const tokenDataString = await AsyncStorage.getItem('tokenData');
+      if (!tokenDataString) {
+        throw new Error('No token available');
       }
 
-      // Ensure content-type is set for requests with body
-      if (fetchOptions.body) {
-        fetchOptions.headers = {
-          ...fetchOptions.headers,
-          'Content-Type': 'application/json',
-        };
-      }
+      const tokenData = JSON.parse(tokenDataString) as TokenData;
+      console.log('Current token expiry:', new Date(tokenData.expiresAt));
 
-      const response = await fetch(url, fetchOptions);
-
-      // Handle 401 errors
-      if (response.status === 401 && requireAuth) {
+      if (Date.now() >= tokenData.expiresAt - 5 * 60 * 1000) {
+        console.log('Token expired or near expiry, refreshing...');
         const newAccessToken = await refreshAccessToken();
-        fetchOptions.headers = {
-          ...fetchOptions.headers,
-          'Authorization': `Bearer ${newAccessToken}`,
-        };
-        return fetch(url, fetchOptions);
+        return newAccessToken;
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return response;
+      return tokenData.accessToken;
     } catch (error) {
-      if (error instanceof Error && error.message.includes('token')) {
-        router.replace('/login');
-      }
+      console.error('Error getting valid token:', error);
       throw error;
     }
   };
 
-  return { authFetch };
+  const authMultipartFetch = {
+    getToken: getValidToken
+  };
+
+  const authFetch = async (url: string, options: RequestInit = {}) => {
+    const accessToken = await getValidToken();
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      ...options.headers,
+    };
+
+    let response = await fetch(url, { ...options, headers });
+
+    if (response.status === 401) {
+      const newAccessToken = await refreshAccessToken();
+      headers.Authorization = `Bearer ${newAccessToken}`;
+      response = await fetch(url, { ...options, headers });
+    }
+
+    return response;
+  };
+
+  return { authFetch, authMultipartFetch };
 }

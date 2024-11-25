@@ -1,20 +1,25 @@
 import { useState } from 'react';
 import {
-    StyleSheet,
     ScrollView,
     KeyboardAvoidingView,
     Platform,
-    Alert, TouchableOpacity, Text
+    Alert,
+    TouchableOpacity,
+    Text,
+    StyleSheet,
+    ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import PostFormContent from '@/components/community/PostFormContent';
 import { PostSubmitService } from '@/api/services/community/postSubmitService';
+import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
 
 export default function NewPost() {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [images, setImages] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const { authMultipartFetch } = useAuthenticatedFetch();
 
     const handleSubmit = async () => {
         if (!title.trim()) {
@@ -24,6 +29,21 @@ export default function NewPost() {
 
         if (!content.trim()) {
             Alert.alert('알림', '내용을 입력하세요.');
+            return;
+        }
+
+        if (title.length > 100) {
+            Alert.alert('알림', '제목은 최대 100자까지 입력 가능합니다.');
+            return;
+        }
+
+        if (content.length > 1000) {
+            Alert.alert('알림', '본문은 최대 1,000자까지 입력 가능합니다.');
+            return;
+        }
+
+        if (images.length > 5) {
+            Alert.alert('알림', '이미지는 최대 5개까지만 업로드할 수 있습니다.');
             return;
         }
 
@@ -40,37 +60,19 @@ export default function NewPost() {
                     onPress: async () => {
                         try {
                             setIsLoading(true);
-                            const response = await PostSubmitService.submit(title, content);
-                            console.log('Response:', response.data);
+                            await PostSubmitService.submit(authMultipartFetch, title, content, images);
 
                             Alert.alert('성공', '게시글이 등록되었습니다.', [
                                 {
                                     text: '확인',
-                                    onPress: () => router.back()
+                                    onPress: () => {
+                                        router.back();
+                                    }
                                 }
                             ]);
                         } catch (error: any) {
-                            console.error('API Error Full Details:', {
-                                message: error.message,
-                                response: error.response?.data,
-                                status: error.response?.status,
-                                headers: error.response?.headers,
-                                requestData: error.config?.data,
-                                requestHeaders: error.config?.headers,
-                                platform: Platform.OS
-                            });
-
-                            let errorMessage = '게시글 등록에 실패했습니다.';
-                            if (error.response) {
-                                if (error.response.status === 400) {
-                                    errorMessage = '잘못된 요청입니다: ' + (error.response.data.message || '입력값을 확인해주세요.');
-                                } else if (error.response.status === 500) {
-                                    errorMessage = '서버 오류가 발생했습니다.';
-                                }
-                                console.error('Server Error Details:', error.response.data);
-                            }
-
-                            Alert.alert('오류', errorMessage);
+                            console.error('Post submission error:', error);
+                            Alert.alert('오류', error.message || '게시글 등록에 실패했습니다.');
                         } finally {
                             setIsLoading(false);
                         }
@@ -105,9 +107,11 @@ export default function NewPost() {
                 onPress={handleSubmit}
                 disabled={isLoading}
             >
-                <Text style={styles.submitButtonText}>
-                    {isLoading ? '등록 중...' : '완료'}
-                </Text>
+                {isLoading ? (
+                    <ActivityIndicator color="white" />
+                ) : (
+                    <Text style={styles.submitButtonText}>완료</Text>
+                )}
             </TouchableOpacity>
         </KeyboardAvoidingView>
     );
