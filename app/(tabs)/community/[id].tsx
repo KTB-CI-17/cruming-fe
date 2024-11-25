@@ -107,7 +107,9 @@ export default function PostDetailPage() {
                         />
                         <View>
                             <Text style={styles.nickname}>{post.userNickname}</Text>
-                            <Text style={styles.instagramId}>@ instagram-id</Text>
+                            {post.instagram_id && (
+                                <Text style={styles.instagramId}>@{post.instagram_id}</Text>
+                            )}
                         </View>
                     </View>
                     <TouchableOpacity>
@@ -199,6 +201,7 @@ interface Post {
     userNickname: string;
     isWriter: boolean;
     files: File[];
+    instagram_id?: string;
 }
 
 interface File {

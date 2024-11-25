@@ -66,15 +66,3 @@ export interface CreatePostData {
     level?: number;
     images?: string[];
 }
-
-export interface UpdatePostData extends Partial<CreatePostData> {}
-
-export interface ApiResponse<T> {
-    data: T;
-    message: string;
-    status: number;
-}
-
-export const isDetailPost = (post: ListPost | DetailPost): post is DetailPost => {
-    return 'content' in post && 'user' in post && 'isWriter' in post;
-};
