@@ -1,14 +1,56 @@
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import {
     View, Text, TouchableOpacity, StyleSheet, ScrollView, Image,
-    Dimensions, TextInput, Alert, ActivityIndicator, ActionSheetIOS
+    Dimensions, TextInput, Alert, ActivityIndicator, ActionSheetIOS,
+    KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect, useRef } from 'react';
-import { API_URL } from '@/api/config/index';
-import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
+import { usePostService } from '@/api/services/community/usePostService';
+import { useImageService } from '@/api/services/community/useImageService';
+import PostReply from '@/components/community/PostReply';
 
 const { width } = Dimensions.get('window');
+
+interface Post {
+    id: number;
+    title: string;
+    content: string;
+    location: string;
+    level: number;
+    category: string;
+    visibility: string;
+    createdAt: string;
+    userId: number;
+    userNickname: string;
+    isWriter: boolean;
+    files: File[];
+    instagram_id?: string;
+}
+
+interface File {
+    id: number;
+    fileName: string;
+    fileKey: string;
+    url: string;
+    fileType: string;
+    fileSize: number;
+    displayOrder: number;
+    userId: number;
+    status: string;
+    createdAt: string;
+}
+
+interface Reply {
+    id: number;
+    content: string;
+    createdAt: string;
+    userId: number;
+    userNickname: string;
+    childCount: number;
+    children?: Reply[];
+    isWriter?: boolean;
+}
 
 export default function PostDetailPage() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,8 +59,34 @@ export default function PostDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [imagesCache, setImagesCache] = useState<{[key: string]: string}>({});
+    const [replies, setReplies] = useState<Reply[]>([]);
+    const [replyText, setReplyText] = useState('');
+    const [selectedReplyId, setSelectedReplyId] = useState<number | null>(null);
+    const [replyPage, setReplyPage] = useState(0);
+    const [hasMoreReplies, setHasMoreReplies] = useState(true);
+    const [loadingReplies, setLoadingReplies] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const scrollViewRef = useRef<ScrollView>(null);
-    const { authFetch } = useAuthenticatedFetch();
+
+    const postService = usePostService();
+    const imageService = useImageService();
+
+    const getSelectedReplyInfo = () => {
+        if (!selectedReplyId) return null;
+        return replies.reduce((found: Reply | null, reply) => {
+            if (found) return found;
+            if (reply.id === selectedReplyId) return reply;
+            if (reply.children) {
+                const childReply = reply.children.find(child => child.id === selectedReplyId);
+                if (childReply) return childReply;
+            }
+            return found;
+        }, null);
+    };
+
+    const navigateToUserProfile = (userId: number) => {
+        router.push(`/profile/${userId}`);
+    };
 
     const showActionSheet = () => {
         ActionSheetIOS.showActionSheetWithOptions(
@@ -58,20 +126,8 @@ export default function PostDetailPage() {
     useEffect(() => {
         const loadAllImages = async () => {
             if (!post) return;
-
-            const imagePromises = post.files.map(async file => {
-                try {
-                    const response = await authFetch(`${API_URL}${file.url}`);
-                    const imageBase64 = await response.text();
-                    return { [file.url]: `data:image/jpeg;base64,${imageBase64}` };
-                } catch (error) {
-                    console.error('Image loading failed:', error);
-                    return { [file.url]: null };
-                }
-            });
-
-            const results = await Promise.all(imagePromises);
-            const cache = Object.assign({}, ...results);
+            const urls = post.files.map(file => file.url);
+            const cache = await imageService.loadImages(urls);
             setImagesCache(cache);
         };
 
@@ -81,11 +137,9 @@ export default function PostDetailPage() {
     const fetchPost = async () => {
         try {
             setIsLoading(true);
-            const response = await authFetch(`${API_URL}/api/v1/posts/${id}`);
-            if (!response.ok) throw new Error();
-            const data = await response.json();
-            console.log(data);
+            const data = await postService.fetchPost(id);
             setPost(data);
+            fetchReplies();
         } catch (error) {
             setError("게시글을 불러오는데 실패했습니다.");
             Alert.alert("오류", "게시글을 불러오는데 실패했습니다.", [
@@ -98,11 +152,7 @@ export default function PostDetailPage() {
 
     const deletePost = async (postId: number) => {
         try {
-            const response = await authFetch(`${API_URL}/api/v1/posts/${postId}`, {
-                method: 'DELETE',
-            });
-            if (!response.ok) throw new Error();
-
+            await postService.deletePost(postId);
             Alert.alert("성공", "활동 기록이 삭제되었습니다.", [
                 { text: "확인", onPress: () => router.back() }
             ]);
@@ -113,25 +163,117 @@ export default function PostDetailPage() {
 
     const handlePostAction = (postId: number, action: 'delete' | 'edit') => {
         if (action === 'delete') {
-            Alert.alert(
-                "삭제 확인",
-                "활동 기록을 삭제하시겠습니까?",
-                [
-                    {
-                        text: "취소",
-                        style: "cancel"
-                    },
-                    {
-                        text: "삭제",
-                        onPress: () => deletePost(postId),
-                        style: "destructive"
-                    }
-                ]
-            );
+            showDeleteConfirmation(postId);
         } else if (action === 'edit') {
-            console.log('수정할 카드 ID:', postId);
-            // TODO: 수정 기능 구현
+            // router.push(`/post/edit/${postId}`);
         }
+    };
+
+    const handleLike = async (postId: number) => {
+        try {
+            await postService.likePost(postId);
+            // TODO: Update like status in UI
+        } catch (error) {
+            Alert.alert("오류", "좋아요 처리에 실패했습니다.");
+        }
+    };
+
+    const handleShare = async (post: Post) => {
+        try {
+            Alert.alert("알림", "공유하기 기능이 준비 중입니다.");
+        } catch (error) {
+            Alert.alert("오류", "공유하기에 실패했습니다.");
+        }
+    };
+
+    const fetchReplies = async (page = 0) => {
+        if (loadingReplies || (!hasMoreReplies && page > 0)) return;
+
+        setLoadingReplies(true);
+        try {
+            const data = await postService.fetchReplies(id, page);
+            if (page === 0) {
+                setReplies(data.content);
+            } else {
+                setReplies(prev => [...prev, ...data.content]);
+            }
+            setHasMoreReplies(!data.last);
+            setReplyPage(page);
+        } catch (error) {
+            console.error('Failed to load replies:', error);
+        } finally {
+            setLoadingReplies(false);
+        }
+    };
+
+    const fetchChildReplies = async (parentId: number, page = 0) => {
+        try {
+            const data = await postService.fetchChildReplies(parentId, page);
+
+            setReplies(prev => prev.map(reply => {
+                if (reply.id === parentId) {
+                    const updatedChildren = page === 0
+                        ? data.content
+                        : [...(reply.children || []), ...data.content];
+
+                    return {
+                        ...reply,
+                        children: updatedChildren
+                    };
+                }
+                return reply;
+            }));
+
+            return !data.last;
+        } catch (error) {
+            console.error('Failed to load child replies:', error);
+            return false;
+        }
+    };
+
+    const handleSubmitReply = async () => {
+        if (!replyText.trim() || isSubmitting) return;
+
+        setIsSubmitting(true);
+        try {
+            await postService.createReply(id, replyText.trim(), selectedReplyId);
+            setReplyText('');
+            setSelectedReplyId(null);
+            await fetchReplies(0);
+        } catch (error) {
+            Alert.alert("오류", "댓글 작성에 실패했습니다.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteReply = async (replyId: number) => {
+        Alert.alert(
+            '삭제 확인',
+            '댓글을 삭제하시겠습니까?',
+            [
+                {
+                    text: '취소',
+                    style: 'cancel'
+                },
+                {
+                    text: '삭제',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await postService.deleteReply(replyId);
+                            await fetchReplies(0);
+                        } catch (error) {
+                            Alert.alert('오류', '댓글 삭제에 실패했습니다.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleEditReply = (replyId: number) => {
+        Alert.alert('알림', '댓글 수정 기능이 준비 중입니다.');
     };
 
     useEffect(() => {
@@ -159,7 +301,10 @@ export default function PostDetailPage() {
     }
 
     return (
-        <>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1 }}
+        >
             <Stack.Screen
                 options={{
                     headerLeft: () => (
@@ -173,7 +318,10 @@ export default function PostDetailPage() {
                 }}
             />
             <ScrollView style={styles.container}>
-                <View style={styles.header}>
+                <TouchableOpacity
+                    style={styles.header}
+                    onPress={() => navigateToUserProfile(post.userId)}
+                >
                     <View style={styles.profileContainer}>
                         <Image
                             source={require('@/assets/images/default-profile.png')}
@@ -191,7 +339,7 @@ export default function PostDetailPage() {
                             <Ionicons name="ellipsis-horizontal" size={24} color="#666" />
                         </TouchableOpacity>
                     )}
-                </View>
+                </TouchableOpacity>
 
                 <Text style={styles.title}>{post.title}</Text>
 
@@ -242,58 +390,136 @@ export default function PostDetailPage() {
                 <Text style={styles.content}>{post.content}</Text>
 
                 <View style={styles.actionButtons}>
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+                    >
                         <Ionicons name="chatbubble-outline" size={24} color="#666" />
+                        {replies.length > 0 && (
+                            <Text style={styles.actionCount}>{replies.length}</Text>
+                        )}
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleLike(post.id)}
+                    >
                         <Ionicons name="heart-outline" size={24} color="#666" />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleShare(post)}
+                    >
                         <Ionicons name="share-social-outline" size={24} color="#666" />
                     </TouchableOpacity>
                 </View>
-
-                <View style={styles.commentInput}>
-                    <TextInput
-                        placeholder="답글을 입력해주세요."
-                        style={styles.input}
-                    />
-                </View>
+                <PostReply
+                    replies={replies}
+                    onLoadMore={() => fetchReplies(replyPage + 1)}
+                    hasMore={hasMoreReplies}
+                    loading={loadingReplies}
+                    onReply={setSelectedReplyId}
+                    onProfilePress={navigateToUserProfile}
+                    onLoadChildren={fetchChildReplies}
+                    onDeleteReply={handleDeleteReply}
+                    onEditReply={handleEditReply}
+                />
             </ScrollView>
-        </>
+
+            <View style={styles.replyInputContainer}>
+                {selectedReplyId && (
+                    <View style={styles.replyingToContainer}>
+                        <Text style={styles.replyingToText}>
+                            <Text style={styles.replyingToName}>{getSelectedReplyInfo()?.userNickname}</Text>
+                            님에게 답글 작성 중
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => setSelectedReplyId(null)}
+                            style={styles.cancelReplyButton}
+                        >
+                            <Ionicons name="close-circle" size={20} color="#666" />
+                        </TouchableOpacity>
+                    </View>
+                )}
+                <View style={styles.inputRow}>
+                    <TextInput
+                        value={replyText}
+                        onChangeText={setReplyText}
+                        placeholder={selectedReplyId ? "답글을 입력하세요..." : "댓글을 입력하세요..."}
+                        style={styles.replyInput}
+                        multiline
+                    />
+                    <TouchableOpacity
+                        style={[
+                            styles.submitButton,
+                            (!replyText.trim() || isSubmitting) && styles.submitButtonDisabled
+                        ]}
+                        onPress={handleSubmitReply}
+                        disabled={!replyText.trim() || isSubmitting}
+                    >
+                        <Text style={[
+                            styles.submitButtonText,
+                            (!replyText.trim() || isSubmitting) && styles.submitButtonTextDisabled
+                        ]}>
+                            게시
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </KeyboardAvoidingView>
     );
 }
 
-interface Post {
-    id: number;
-    title: string;
-    content: string;
-    location: string;
-    level: number;
-    category: string;
-    visibility: string;
-    createdAt: string;
-    userId: number;
-    userNickname: string;
-    isWriter: boolean;
-    files: File[];
-    instagram_id?: string;
-}
-
-interface File {
-    id: number;
-    fileName: string;
-    fileKey: string;
-    url: string;
-    fileType: string;
-    fileSize: number;
-    displayOrder: number;
-    userId: number;
-    status: string;
-    createdAt: string;
-}
-
 const styles = StyleSheet.create({
+    replyInputContainer: {
+        padding: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#EEEEEE',
+        backgroundColor: '#FFFFFF',
+    },
+    replyingToContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingBottom: 8,
+    },
+    replyingToText: {
+        fontSize: 14,
+        color: '#666',
+    },
+    replyingToName: {
+        fontWeight: '600',
+        color: '#000',
+    },
+    cancelReplyButton: {
+        padding: 4,
+    },
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    replyInput: {
+        flex: 1,
+        backgroundColor: '#F5F5F5',
+        borderRadius: 8,
+        padding: 12,
+        marginRight: 8,
+        maxHeight: 100,
+    },
+    submitButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+    },
+    submitButtonDisabled: {
+        opacity: 0.5,
+    },
+    submitButtonText: {
+        color: '#007AFF',
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    submitButtonTextDisabled: {
+        color: '#999',
+    },
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
@@ -393,15 +619,13 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         marginRight: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
-    commentInput: {
-        padding: 16,
-        paddingTop: 0,
-    },
-    input: {
-        backgroundColor: '#F5F5F5',
-        padding: 12,
-        borderRadius: 8,
+    actionCount: {
+        fontSize: 14,
+        color: '#666',
     },
     headerButton: {
         padding: 8,
@@ -426,5 +650,5 @@ const styles = StyleSheet.create({
     retryButtonText: {
         color: '#FFFFFF',
         fontSize: 16,
-    }
+    },
 });
