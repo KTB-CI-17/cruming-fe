@@ -26,25 +26,26 @@ function replyReducer(state: ReplyState, action: ReplyAction): ReplyState {
                 totalCount: action.totalCount,
                 hasMore: action.hasMore,
             };
-        case 'ADD_REPLY': {
-            if (action.payload.parentId) {
-                return {
-                    ...state,
-                    replies: state.replies.map(reply => {
-                        if (reply.id === action.payload.parentId) {
-                            return {
-                                ...reply,
-                                children: [...(reply.children || []), action.payload],
-                                childCount: (reply.childCount || 0) + 1,
-                            };
-                        }
-                        return reply;
-                    }),
-                };
-            }
+
+        case 'UPDATE_CHILDREN': {
+            const updatedReplies = state.replies.map(reply => {
+                if (reply.id === action.payload.parentId) {
+                    const existingChildren = reply.children || [];
+                    const newChildren = action.payload.page === 0
+                        ? action.payload.children
+                        : [...existingChildren, ...action.payload.children];
+
+                    return {
+                        ...reply,
+                        children: newChildren
+                    };
+                }
+                return reply;
+            });
+
             return {
                 ...state,
-                replies: [...state.replies, action.payload],
+                replies: updatedReplies
             };
         }
         case 'UPDATE_REPLY':
@@ -69,21 +70,28 @@ function replyReducer(state: ReplyState, action: ReplyAction): ReplyState {
             };
         case 'UPDATE_CHILDREN': {
             const { parentId, children, page } = action.payload;
+
             return {
                 ...state,
                 replies: state.replies.map(reply => {
                     if (reply.id === parentId) {
+                        // 기존 자식 답글 배열
                         const existingChildren = reply.children || [];
-                        const newChildren = page === 0
-                            ? children
-                            : [...existingChildren, ...children.filter(child =>
-                                !existingChildren.find(existing => existing.id === child.id)
-                            )];
+
+                        // 새로운 자식 답글들 중 중복되지 않는 것만 필터링
+                        const newChildrenFiltered = children.filter(
+                            newChild => !existingChildren.some(
+                                existing => existing.id === newChild.id
+                            )
+                        );
+
+                        // 기존 답글과 새로운 답글 합치기
+                        const mergedChildren = [...existingChildren, ...newChildrenFiltered];
 
                         return {
                             ...reply,
-                            children: newChildren,
-                            childCount: reply.childCount // 유지
+                            children: mergedChildren,
+                            childCount: reply.childCount // 원래 childCount 유지
                         };
                     }
                     return reply;
@@ -166,6 +174,7 @@ export const useReplyState = (postId: string) => {
     const fetchReplies = useCallback(async (page = 0) => {
         try {
             const response = await postService.fetchReplies(postId, page);
+
             dispatch({
                 type: 'SET_REPLIES',
                 payload: response.content,
@@ -175,6 +184,7 @@ export const useReplyState = (postId: string) => {
             });
             return response;
         } catch (error) {
+            console.error('Error fetching replies:', error);
             dispatch({ type: 'SET_ERROR', payload: error as Error });
             throw error;
         }
@@ -182,6 +192,7 @@ export const useReplyState = (postId: string) => {
 
     const fetchChildReplies = useCallback(async (parentId: number, page = 0) => {
         dispatch({ type: 'SET_LOADING', payload: { replyId: parentId, isLoading: true } });
+
         try {
             const response = await postService.fetchChildReplies(parentId, page);
 
@@ -197,12 +208,13 @@ export const useReplyState = (postId: string) => {
             dispatch({ type: 'SET_PAGE', payload: { replyId: parentId, page } });
             return true;
         } catch (error) {
+            console.error('Error fetching child replies:', error);
             dispatch({ type: 'SET_ERROR', payload: error as Error });
             return false;
         } finally {
             dispatch({ type: 'SET_LOADING', payload: { replyId: parentId, isLoading: false } });
         }
-    }, []);
+    }, [postService]);
 
     const createReply = useCallback(async (content: string, parentId?: number | null) => {
         dispatch({ type: 'SET_SUBMITTING', payload: true });

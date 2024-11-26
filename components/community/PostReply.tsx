@@ -49,11 +49,12 @@ export default function PostReply({
         }
     };
 
+
     const renderChildReplies = (reply: Reply) => {
         if (!reply.children || reply.children.length === 0) return null;
 
         const remainingReplies = reply.childCount ? (reply.childCount - reply.children.length) : 0;
-        const isLoading = loadingStates?.[reply.id] ?? false; // optional chaining과 nullish coalescing 사용
+        const isLoading = loadingStates?.[reply.id] ?? false;
 
         return (
             <View style={styles.childRepliesContainer}>
@@ -66,11 +67,11 @@ export default function PostReply({
                     <TouchableOpacity
                         style={styles.viewMoreButton}
                         onPress={() => {
-                            const nextPage = Math.ceil(reply.children!.length / 5);
+                            const nextPage = Math.ceil((reply.children?.length || 0) / 5);
                             onLoadChildren(reply.id, nextPage);
                         }}
                     >
-                        <Text style={styles.viewMoreText}>대댓글 더보기</Text>
+                        <Text style={styles.viewMoreText}>대댓글 {remainingReplies}개 더보기</Text>
                     </TouchableOpacity>
                 )}
                 {isLoading && (
