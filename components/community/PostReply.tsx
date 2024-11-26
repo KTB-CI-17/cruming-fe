@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
-import {Reply} from "@/api/types/community/post";
+import { View, Text, TouchableOpacity, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { Reply } from "@/api/types/community/post";
 
 interface PostReplyProps {
     replies: Reply[];
@@ -12,6 +12,8 @@ interface PostReplyProps {
     onLoadChildren: (parentId: number, page: number) => Promise<boolean>;
     onDeleteReply: (replyId: number) => void;
     onEditReply: (replyId: number) => void;
+    totalCount: number;
+    loadingStates?: { [key: number]: boolean }; // optional로 변경
 }
 
 export default function PostReply({
@@ -24,6 +26,8 @@ export default function PostReply({
                                       onLoadChildren,
                                       onDeleteReply,
                                       onEditReply,
+                                      totalCount,
+                                      loadingStates = {}, // 기본값 제공
                                   }: PostReplyProps) {
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -48,26 +52,37 @@ export default function PostReply({
     const renderChildReplies = (reply: Reply) => {
         if (!reply.children || reply.children.length === 0) return null;
 
-        const remainingReplies = reply.childCount - reply.children.length;
+        const remainingReplies = reply.childCount ? (reply.childCount - reply.children.length) : 0;
+        const isLoading = loadingStates?.[reply.id] ?? false; // optional chaining과 nullish coalescing 사용
 
         return (
             <View style={styles.childRepliesContainer}>
-                {reply.children.map(child => renderReplyItem({ item: child, isChild: true }))}
-                {remainingReplies > 0 && (
+                {reply.children.map((child, index) => (
+                    <React.Fragment key={`${child.id}-${index}`}>
+                        {renderReplyItem(child, true)}
+                    </React.Fragment>
+                ))}
+                {remainingReplies > 0 && reply.childCount && !isLoading && (
                     <TouchableOpacity
-                        style={styles.viewRepliesButton}
-                        onPress={() => onLoadChildren(reply.id, Math.ceil(reply.children!.length / 5))}
+                        style={styles.viewMoreButton}
+                        onPress={() => {
+                            const nextPage = Math.ceil(reply.children!.length / 5);
+                            onLoadChildren(reply.id, nextPage);
+                        }}
                     >
-                        <Text style={styles.viewRepliesText}>
-                            답글 {remainingReplies}개 더보기
-                        </Text>
+                        <Text style={styles.viewMoreText}>대댓글 더보기</Text>
                     </TouchableOpacity>
+                )}
+                {isLoading && (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="small" color="#666" />
+                    </View>
                 )}
             </View>
         );
     };
 
-    const renderReplyItem = ({ item, isChild = false }: { item: Reply; isChild?: boolean }) => (
+    const renderReplyItem = (item: Reply, isChild = false) => (
         <View key={item.id} style={[styles.replyItem, isChild && styles.childReplyItem]}>
             <View style={styles.replyHeader}>
                 <TouchableOpacity
@@ -121,27 +136,26 @@ export default function PostReply({
         </View>
     );
 
-    const renderFooter = () => {
-        if (!loading) return null;
-        return (
-            <View style={styles.loadingFooter}>
-                <ActivityIndicator size="small" color="#666" />
-            </View>
-        );
-    };
+    const remainingReplies = totalCount - replies.length;
 
     return (
         <View style={styles.container}>
-            <FlatList
-                data={replies}
-                renderItem={renderReplyItem}
-                keyExtractor={(item) => item.id.toString()}
-                onEndReached={() => hasMore && onLoadMore()}
-                onEndReachedThreshold={0.5}
-                ListFooterComponent={renderFooter}
-                contentContainerStyle={styles.listContainer}
-                showsVerticalScrollIndicator={false}
-            />
+            <View style={styles.contentContainer}>
+                {replies.map(reply => renderReplyItem(reply, false))}
+                {loading && (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="small" color="#666" />
+                    </View>
+                )}
+                {!loading && hasMore && remainingReplies > 0 && (
+                    <TouchableOpacity
+                        style={styles.loadMoreButton}
+                        onPress={onLoadMore}
+                    >
+                        <Text style={styles.loadMoreText}>댓글 더보기</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
         </View>
     );
 }
@@ -234,5 +248,39 @@ const styles = StyleSheet.create({
     loadingFooter: {
         padding: 16,
         alignItems: 'center',
+    },
+    viewMoreButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        marginTop: 8,
+        backgroundColor: '#F5F5F5',
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+        marginLeft: 40,
+    },
+    viewMoreText: {
+        color: '#666666',
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    loadingContainer: {
+        paddingVertical: 16,
+        alignItems: 'center',
+    },
+    contentContainer: {
+        paddingBottom: 16,
+    },
+    loadMoreButton: {
+        marginTop: 8,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        backgroundColor: '#F5F5F5',
+        borderRadius: 8,
+        alignSelf: 'center',
+    },
+    loadMoreText: {
+        color: '#666666',
+        fontSize: 14,
+        fontWeight: '500',
     },
 });

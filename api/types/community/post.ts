@@ -97,6 +97,8 @@ export interface ReplyState {
     replyText: string;
     isSubmitting: boolean;
     error: Error | null;
+    totalCount: number;
+    hasMore: boolean;
 }
 
 export interface PendingReply {
@@ -107,7 +109,7 @@ export interface PendingReply {
 }
 
 export type ReplyAction =
-    | { type: 'SET_REPLIES'; payload: Reply[] }
+    | { type: 'SET_REPLIES'; payload: Reply[]; totalCount: number; hasMore: boolean; page: number }
     | { type: 'ADD_REPLY'; payload: Reply }
     | { type: 'UPDATE_REPLY'; payload: { id: number; content: string } }
     | { type: 'DELETE_REPLY'; payload: number }
@@ -118,4 +120,5 @@ export type ReplyAction =
     | { type: 'SET_EDITING'; payload: number | null }
     | { type: 'SET_REPLY_TEXT'; payload: string }
     | { type: 'SET_SUBMITTING'; payload: boolean }
-    | { type: 'SET_ERROR'; payload: Error | null };
+    | { type: 'SET_ERROR'; payload: Error | null }
+    | { type: 'UPDATE_CHILDREN'; payload: { parentId: number; children: Reply[]; page: number } };

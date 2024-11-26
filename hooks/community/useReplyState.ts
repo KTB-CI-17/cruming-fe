@@ -1,6 +1,6 @@
 import { useReducer, useCallback } from 'react';
 import { usePostService } from '@/api/services/community/usePostService';
-import {Reply, ReplyAction, ReplyState} from "@/api/types/community/post";
+import { Reply, ReplyAction, ReplyState } from "@/api/types/community/post";
 
 const initialState: ReplyState = {
     replies: [],
@@ -13,6 +13,8 @@ const initialState: ReplyState = {
     replyText: '',
     isSubmitting: false,
     error: null,
+    totalCount: 0,
+    hasMore: true,
 };
 
 function replyReducer(state: ReplyState, action: ReplyAction): ReplyState {
@@ -20,7 +22,9 @@ function replyReducer(state: ReplyState, action: ReplyAction): ReplyState {
         case 'SET_REPLIES':
             return {
                 ...state,
-                replies: action.payload,
+                replies: action.page === 0 ? action.payload : [...state.replies, ...action.payload],
+                totalCount: action.totalCount,
+                hasMore: action.hasMore,
             };
         case 'ADD_REPLY': {
             if (action.payload.parentId) {
@@ -63,18 +67,38 @@ function replyReducer(state: ReplyState, action: ReplyAction): ReplyState {
                     return reply;
                 }),
             };
+        case 'UPDATE_CHILDREN': {
+            const { parentId, children, page } = action.payload;
+            return {
+                ...state,
+                replies: state.replies.map(reply => {
+                    if (reply.id === parentId) {
+                        const existingChildren = reply.children || [];
+                        const newChildren = page === 0
+                            ? children
+                            : [...existingChildren, ...children.filter(child =>
+                                !existingChildren.find(existing => existing.id === child.id)
+                            )];
+
+                        return {
+                            ...reply,
+                            children: newChildren,
+                            childCount: reply.childCount // 유지
+                        };
+                    }
+                    return reply;
+                })
+            };
+        }
         case 'DELETE_REPLY':
             return {
                 ...state,
                 replies: state.replies.filter(reply => {
                     if (reply.id === action.payload) return false;
                     if (reply.children) {
-                        return {
-                            ...reply,
-                            children: reply.children.filter(
-                                child => child.id !== action.payload
-                            ),
-                        };
+                        reply.children = reply.children.filter(
+                            child => child.id !== action.payload
+                        );
                     }
                     return true;
                 }),
@@ -107,14 +131,12 @@ function replyReducer(state: ReplyState, action: ReplyAction): ReplyState {
             return {
                 ...state,
                 selectedReplyId: action.payload,
-                // 답글 작성 시 수정 모드 해제
                 editingReplyId: null,
             };
         case 'SET_EDITING':
             return {
                 ...state,
                 editingReplyId: action.payload,
-                // 수정 시 답글 작성 모드 해제
                 selectedReplyId: null,
             };
         case 'SET_REPLY_TEXT':
@@ -144,7 +166,13 @@ export const useReplyState = (postId: string) => {
     const fetchReplies = useCallback(async (page = 0) => {
         try {
             const response = await postService.fetchReplies(postId, page);
-            dispatch({ type: 'SET_REPLIES', payload: response.content });
+            dispatch({
+                type: 'SET_REPLIES',
+                payload: response.content,
+                totalCount: response.totalElements,
+                hasMore: !response.last,
+                page
+            });
             return response;
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error as Error });
@@ -156,20 +184,21 @@ export const useReplyState = (postId: string) => {
         dispatch({ type: 'SET_LOADING', payload: { replyId: parentId, isLoading: true } });
         try {
             const response = await postService.fetchChildReplies(parentId, page);
+
             dispatch({
-                type: 'SET_CHILDREN',
+                type: 'UPDATE_CHILDREN',
                 payload: {
                     parentId,
-                    children: page === 0
-                        ? response.content
-                        : [...(state.childrenMap[parentId] || []), ...response.content]
+                    children: response.content,
+                    page
                 }
             });
+
             dispatch({ type: 'SET_PAGE', payload: { replyId: parentId, page } });
-            return response;
+            return true;
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error as Error });
-            throw error;
+            return false;
         } finally {
             dispatch({ type: 'SET_LOADING', payload: { replyId: parentId, isLoading: false } });
         }
@@ -177,14 +206,13 @@ export const useReplyState = (postId: string) => {
 
     const createReply = useCallback(async (content: string, parentId?: number | null) => {
         dispatch({ type: 'SET_SUBMITTING', payload: true });
-        const tempId = Date.now().toString();
+        const tempId = Date.now();
 
-        // Optimistic Update
         const optimisticReply: Reply = {
-            id: Number(tempId),
+            id: tempId,
             content,
-            userId: 0, // 임시 값
-            userNickname: '작성 중...', // 임시 값
+            userId: 0,
+            userNickname: '작성 중...',
             createdAt: new Date().toISOString(),
             isWriter: true,
             childCount: 0,
@@ -195,11 +223,11 @@ export const useReplyState = (postId: string) => {
 
         try {
             await postService.createReply(postId, content, parentId);
-            await fetchReplies(0); // 실제 데이터로 갱신
+            await fetchReplies(0);
             dispatch({ type: 'SET_REPLY_TEXT', payload: '' });
             dispatch({ type: 'SELECT_REPLY', payload: null });
         } catch (error) {
-            dispatch({ type: 'DELETE_REPLY', payload: Number(tempId) }); // Optimistic Update 롤백
+            dispatch({ type: 'DELETE_REPLY', payload: tempId });
             dispatch({ type: 'SET_ERROR', payload: error as Error });
             throw error;
         } finally {
@@ -211,7 +239,6 @@ export const useReplyState = (postId: string) => {
         dispatch({ type: 'SET_SUBMITTING', payload: true });
         const originalContent = state.replies.find(r => r.id === replyId)?.content;
 
-        // Optimistic Update
         dispatch({ type: 'UPDATE_REPLY', payload: { id: replyId, content } });
 
         try {
@@ -219,7 +246,6 @@ export const useReplyState = (postId: string) => {
             dispatch({ type: 'SET_REPLY_TEXT', payload: '' });
             dispatch({ type: 'SET_EDITING', payload: null });
         } catch (error) {
-            // Rollback
             if (originalContent) {
                 dispatch({ type: 'UPDATE_REPLY', payload: { id: replyId, content: originalContent } });
             }
@@ -234,13 +260,11 @@ export const useReplyState = (postId: string) => {
         const replyToDelete = state.replies.find(r => r.id === replyId);
         if (!replyToDelete) return;
 
-        // Optimistic Delete
         dispatch({ type: 'DELETE_REPLY', payload: replyId });
 
         try {
             await postService.deleteReply(replyId);
         } catch (error) {
-            // Rollback
             if (replyToDelete) {
                 dispatch({ type: 'ADD_REPLY', payload: replyToDelete });
             }

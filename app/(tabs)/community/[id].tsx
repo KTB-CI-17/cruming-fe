@@ -31,6 +31,24 @@ export default function PostDetailPage() {
     const [imagesCache, setImagesCache] = useState<{[key: string]: string}>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const listRef = useRef<FlatList>(null);
+    const [totalReplyCount, setTotalReplyCount] = useState(0);
+
+    const fetchPost = async () => {
+        try {
+            setIsLoading(true);
+            const data = await postService.fetchPost(id);
+            setPost(data);
+            const repliesResponse = await replyActions.fetchReplies();
+            setTotalReplyCount(repliesResponse.totalElements); // 전체 댓글 수 저장
+        } catch (error) {
+            setError("게시글을 불러오는데 실패했습니다.");
+            Alert.alert("오류", "게시글을 불러오는데 실패했습니다.", [
+                { text: "확인", onPress: () => router.back() }
+            ]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const {
         state: replyState,
@@ -90,22 +108,6 @@ export default function PostDetailPage() {
                 }
             ]
         );
-    };
-
-    const fetchPost = async () => {
-        try {
-            setIsLoading(true);
-            const data = await postService.fetchPost(id);
-            setPost(data);
-            await replyActions.fetchReplies();
-        } catch (error) {
-            setError("게시글을 불러오는데 실패했습니다.");
-            Alert.alert("오류", "게시글을 불러오는데 실패했습니다.", [
-                { text: "확인", onPress: () => router.back() }
-            ]);
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     const deletePost = async (postId: number) => {
@@ -267,7 +269,7 @@ export default function PostDetailPage() {
         return (
             <PostReply
                 replies={replyState.replies}
-                onLoadMore={() => replyActions.fetchReplies(Object.keys(replyState.pageStates).length)}
+                onLoadMore={() => replyActions.fetchReplies(Math.ceil(replyState.replies.length / 10))}
                 hasMore={!replyState.error}
                 loading={replyState.isSubmitting}
                 onReply={replyActions.selectReply}
@@ -275,6 +277,7 @@ export default function PostDetailPage() {
                 onDeleteReply={handleDeleteReply}
                 onEditReply={handleEditReply}
                 onLoadChildren={replyActions.fetchChildReplies}
+                totalCount={totalReplyCount}
             />
         );
     };
