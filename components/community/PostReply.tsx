@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
-import { Reply } from '@/api/types/community/reply';
+import {Reply} from "@/api/types/community/post";
 
 interface PostReplyProps {
     replies: Reply[];

@@ -8,7 +8,7 @@ import {
     ActivityIndicator,
     Platform,
 } from 'react-native';
-import { Reply } from '@/api/types/community/reply';
+import {Reply} from "@/api/types/community/post";
 
 interface PostReplyInputProps {
     replyText: string;

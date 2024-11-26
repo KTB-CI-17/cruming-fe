@@ -1,6 +1,6 @@
 import { useReducer, useCallback } from 'react';
-import { ReplyState, Reply, ReplyAction } from '@/api/types/community/reply';
 import { usePostService } from '@/api/services/community/usePostService';
+import {Reply, ReplyAction, ReplyState} from "@/api/types/community/post";
 
 const initialState: ReplyState = {
     replies: [],

@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect, useRef } from 'react';
 import { usePostService } from '@/api/services/community/usePostService';
 import { useImageService } from '@/api/services/community/useImageService';
-import { Post } from '@/api/types/community/post';
+import {Post, Reply} from '@/api/types/community/post';
 import { useReplyState } from '@/hooks/community/useReplyState';
 
 import PostHeader from '@/components/community/PostHeader';
@@ -17,8 +17,6 @@ import PostContent from '@/components/community/PostContent';
 import PostActions from '@/components/community/PostActions';
 import PostReply from '@/components/community/PostReply';
 import PostReplyInput from '@/components/community/PostReplyInput';
-import PostLocation from "@/components/community/PostLocation";
-import {Reply} from "@/api/types/community/reply";
 
 type ListItem = {
     type: 'content' | 'replies';
