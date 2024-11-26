@@ -6,7 +6,7 @@ import { Post } from '@/api/types/community/post';
 interface PostActionsProps {
     post: Post;
     replyCount: number;
-    onLike: () => void;
+    onLike: () => Promise<boolean>;
     onShare: () => void;
     onReply: () => void;
 }
@@ -27,7 +27,14 @@ export default function PostActions({ post, replyCount, onLike, onShare, onReply
                 style={styles.actionButton}
                 onPress={onLike}
             >
-                <Ionicons name="heart-outline" size={24} color="#666" />
+                {post.isLiked ? (
+                    <Ionicons name="heart" size={24} color="red" />
+                ) : (
+                    <Ionicons name="heart-outline" size={24} color="#666" />
+                )}
+                {post.likeCount > 0 && (
+                    <Text style={styles.actionCount}>{post.likeCount}</Text>
+                )}
             </TouchableOpacity>
             <TouchableOpacity
                 style={styles.actionButton}

@@ -129,12 +129,23 @@ export default function PostDetailPage() {
         }
     };
 
-    const handleLike = async (postId: number) => {
+    const handleLike = async () => {
+        if (!post) return;
+
         try {
-            await postService.likePost(postId);
-            // TODO: Update like status in UI
+            const isLiked = await postService.togglePostLike(post.id);
+            setPost(prevPost => {
+                if (!prevPost) return null;
+                return {
+                    ...prevPost,
+                    isLiked: isLiked,
+                    likeCount: isLiked ? prevPost.likeCount + 1 : prevPost.likeCount - 1
+                };
+            });
+            return isLiked;
         } catch (error) {
             Alert.alert("오류", "좋아요 처리에 실패했습니다.");
+            return false;
         }
     };
 
@@ -233,8 +244,6 @@ export default function PostDetailPage() {
         if (replyToEdit) {
             setEditingReplyId(replyId);
             setReplyText(replyToEdit.content);
-            // 대댓글인 경우 부모 댓글 ID를 설정
-            setSelectedReplyId(replyToEdit.parentId);
         }
     };
 
@@ -278,6 +287,7 @@ export default function PostDetailPage() {
         fetchPost();
     }, [id]);
 
+
     const renderItem = ({ item, index }: { item: ListItem; index: number }) => {
         if (!post) return null;
 
@@ -302,7 +312,7 @@ export default function PostDetailPage() {
                     <PostActions
                         post={post}
                         replyCount={replies.length}
-                        onLike={() => handleLike(post.id)}
+                        onLike={handleLike}
                         onShare={handleShare}
                         onReply={scrollToReplies}
                     />

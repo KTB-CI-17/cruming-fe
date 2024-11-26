@@ -26,7 +26,6 @@ export function usePostService() {
         return response.json();
     };
 
-    // Reply APIs with sorting
     const fetchReplies = async (postId: string, page = 0, size = 10) => {
         const response = await authFetch(
             `${API_URL}/api/v1/posts/${postId}/replies?page=${page}&size=${size}&sort=createdAt,asc`
@@ -36,7 +35,6 @@ export function usePostService() {
     };
 
     const fetchChildReplies = async (parentId: number, page = 0) => {
-        // 대댓글은 항상 5개씩 고정
         const response = await authFetch(
             `${API_URL}/api/v1/posts/replies/${parentId}/children?page=${page}&size=5&sort=createdAt,asc`
         );
@@ -59,7 +57,6 @@ export function usePostService() {
         }
     };
 
-
     const updateReply = async (replyId: number, content: string) => {
         try {
             await authFetch(`${API_URL}/api/v1/posts/replies/${replyId}`, {
@@ -80,6 +77,28 @@ export function usePostService() {
         return;
     };
 
+
+    const togglePostLike = async (postId: number): Promise<boolean> => {
+        try {
+            const response = await authFetch(
+                `${API_URL}/api/v1/posts/${postId}/likes`,
+                {
+                    method: 'POST',
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to toggle like');
+            }
+
+            const isLiked = await response.json();
+            return isLiked;
+        } catch (error) {
+            console.error('Error toggling post like:', error);
+            throw error;
+        }
+    };
+
     return {
         fetchPost,
         deletePost,
@@ -89,5 +108,6 @@ export function usePostService() {
         createReply,
         updateReply,
         deleteReply,
+        togglePostLike,
     };
 }

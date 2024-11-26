@@ -45,6 +45,7 @@ export interface PostListParams {
 }
 
 export interface Post extends BasePost {
+    id: number;
     content: string;
     location?: string;
     level?: string;
@@ -55,6 +56,8 @@ export interface Post extends BasePost {
     isWriter: boolean;
     files: File[];
     instagram_id?: string;
+    isLiked: boolean;
+    likeCount: number;
 }
 
 export interface File {
