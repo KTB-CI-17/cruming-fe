@@ -1,4 +1,3 @@
-// @/api/types/community/post.ts
 interface BasePost {
     id: number;
     title: string;
@@ -8,20 +7,6 @@ interface BasePost {
 export interface ListPost extends BasePost {
     isNew?: boolean;
     isHot?: boolean;
-}
-
-export interface User {
-    userId: number;
-    nickname: string;
-}
-
-export interface DetailPost extends BasePost {
-    content: string;
-    location?: string;
-    level?: number;
-    images?: string[];
-    user: User;
-    isWriter: boolean;
 }
 
 export interface PageableSort {
@@ -59,22 +44,39 @@ export interface PostListParams {
     category: string;
 }
 
-export interface CreatePostData {
-    title: string;
+export interface Post extends BasePost {
     content: string;
     location?: string;
-    level?: number;
-    images?: string[];
+    level?: string;
+    category: string;
+    visibility: string;
+    userId: number;
+    userNickname: string;
+    isWriter: boolean;
+    files: File[];
+    instagram_id?: string;
 }
 
-export interface UpdatePostData extends Partial<CreatePostData> {}
-
-export interface ApiResponse<T> {
-    data: T;
-    message: string;
-    status: number;
+export interface File {
+    id: number;
+    fileName: string;
+    fileKey: string;
+    url: string;
+    fileType: string;
+    fileSize: number;
+    displayOrder: number;
+    userId: number;
+    status: string;
+    createdAt: string;
 }
 
-export const isDetailPost = (post: ListPost | DetailPost): post is DetailPost => {
-    return 'content' in post && 'user' in post && 'isWriter' in post;
-};
+export interface Reply {
+    id: number;
+    content: string;
+    createdAt: string;
+    userId: number;
+    userNickname: string;
+    childCount: number;
+    children?: Reply[];
+    isWriter?: boolean;
+}

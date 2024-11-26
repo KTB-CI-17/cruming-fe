@@ -16,11 +16,21 @@ export default function ImageUploadArea({
                                         }: ImageUploadAreaProps) {
     const pickImage = async () => {
         try {
+            // Request permissions first
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+            if (!permissionResult.granted) {
+                alert("사진 접근 권한이 필요합니다.");
+                return;
+            }
+
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsMultipleSelection: true,
                 selectionLimit: maxImages - images.length,
-                quality: 1,
+                quality: 0.8,
+                exif: false,
+                allowsEditing: false,
             });
 
             if (!result.canceled && result.assets.length > 0) {
@@ -30,6 +40,7 @@ export default function ImageUploadArea({
             }
         } catch (error) {
             console.error('Error picking images:', error);
+            alert('이미지를 선택하는 중 오류가 발생했습니다.');
         }
     };
 
@@ -45,9 +56,6 @@ export default function ImageUploadArea({
                 showsHorizontalScrollIndicator={false}
                 style={styles.imageScrollView}
                 contentContainerStyle={styles.imageScrollContent}
-                scrollEventThrottle={16}
-                directionalLockEnabled={true}
-                alwaysBounceHorizontal={true}
             >
                 <Pressable style={styles.imageRow}>
                     {images.length < maxImages && (
@@ -64,7 +72,11 @@ export default function ImageUploadArea({
 
                     {images.map((uri, index) => (
                         <Pressable key={index} style={styles.imageContainer}>
-                            <Image source={{ uri }} style={styles.image} />
+                            <Image
+                                source={{ uri }}
+                                style={styles.image}
+                                resizeMode="cover"
+                            />
                             <TouchableOpacity
                                 style={styles.removeButton}
                                 onPress={() => removeImage(index)}
