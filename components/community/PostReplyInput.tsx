@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import {Reply} from '@/api/types/community/post';
+import { Reply } from '@/api/types/community/post';
 
 interface PostReplyInputProps {
     replyText: string;
@@ -10,6 +10,7 @@ interface PostReplyInputProps {
     onCancelReply: () => void;
     onSubmitReply: () => void;
     isSubmitting: boolean;
+    isEditing: boolean;
 }
 
 export default function PostReplyInput({
@@ -19,14 +20,21 @@ export default function PostReplyInput({
                                            onCancelReply,
                                            onSubmitReply,
                                            isSubmitting,
+                                           isEditing,
                                        }: PostReplyInputProps) {
     return (
         <View style={styles.replyInputContainer}>
-            {selectedReply && (
+            {(selectedReply || isEditing) && (
                 <View style={styles.replyingToContainer}>
                     <Text style={styles.replyingToText}>
-                        <Text style={styles.replyingToName}>{selectedReply.userNickname}</Text>
-                        님에게 답글 작성 중
+                        {isEditing ? (
+                            '댓글 수정 중'
+                        ) : (
+                            <>
+                                <Text style={styles.replyingToName}>{selectedReply?.userNickname}</Text>
+                                님에게 답글 작성 중
+                            </>
+                        )}
                     </Text>
                     <TouchableOpacity
                         onPress={onCancelReply}
@@ -40,7 +48,13 @@ export default function PostReplyInput({
                 <TextInput
                     value={replyText}
                     onChangeText={onReplyTextChange}
-                    placeholder={selectedReply ? "답글을 입력하세요..." : "댓글을 입력하세요..."}
+                    placeholder={
+                        isEditing
+                            ? "댓글을 수정하세요..."
+                            : selectedReply
+                                ? "답글을 입력하세요..."
+                                : "댓글을 입력하세요..."
+                    }
                     style={styles.replyInput}
                     multiline
                 />
@@ -56,7 +70,7 @@ export default function PostReplyInput({
                         styles.submitButtonText,
                         (!replyText.trim() || isSubmitting) && styles.submitButtonTextDisabled
                     ]}>
-                        게시
+                        {isEditing ? '수정' : '게시'}
                     </Text>
                 </TouchableOpacity>
             </View>

@@ -51,9 +51,6 @@ export function usePostService() {
 
         const response = await authFetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify({ content }),
         });
 
@@ -62,13 +59,17 @@ export function usePostService() {
         }
     };
 
+
     const updateReply = async (replyId: number, content: string) => {
-        const response = await authFetch(`${API_URL}/api/v1/posts/replies/${replyId}`, {
-            method: 'PUT',
-            body: JSON.stringify({ content }),
-        });
-        if (!response.ok) throw new Error();
-        return response.json();
+        try {
+            await authFetch(`${API_URL}/api/v1/posts/replies/${replyId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ content }),
+            });
+        } catch (error) {
+            console.error('Update reply error:', error);
+            throw error;
+        }
     };
 
     const deleteReply = async (replyId: number) => {

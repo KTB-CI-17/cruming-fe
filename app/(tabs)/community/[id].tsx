@@ -32,6 +32,7 @@ export default function PostDetailPage() {
     const [replies, setReplies] = useState<Reply[]>([]);
     const [replyText, setReplyText] = useState('');
     const [selectedReplyId, setSelectedReplyId] = useState<number | null>(null);
+    const [editingReplyId, setEditingReplyId] = useState<number | null>(null);
     const [replyPage, setReplyPage] = useState(0);
     const [hasMoreReplies, setHasMoreReplies] = useState(true);
     const [loadingReplies, setLoadingReplies] = useState(false);
@@ -202,14 +203,38 @@ export default function PostDetailPage() {
 
         setIsSubmitting(true);
         try {
-            await postService.createReply(id, replyText.trim(), selectedReplyId);
+            if (editingReplyId) {
+                await postService.updateReply(editingReplyId, replyText.trim());
+                setEditingReplyId(null);
+            } else {
+                await postService.createReply(id, replyText.trim(), selectedReplyId);
+            }
             setReplyText('');
             setSelectedReplyId(null);
             await fetchReplies(0);
-        } catch (error) {
-            Alert.alert("오류", "댓글 작성에 실패했습니다.");
+        } catch (error: any) {
+            Alert.alert("오류", error.message || "댓글 작성에 실패했습니다.");
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleEditReply = (replyId: number) => {
+        const replyToEdit = replies.reduce((found: Reply | null, reply) => {
+            if (found) return found;
+            if (reply.id === replyId) return reply;
+            if (reply.children) {
+                const childReply = reply.children.find(child => child.id === replyId);
+                if (childReply) return childReply;
+            }
+            return found;
+        }, null);
+
+        if (replyToEdit) {
+            setEditingReplyId(replyId);
+            setReplyText(replyToEdit.content);
+            // 대댓글인 경우 부모 댓글 ID를 설정
+            setSelectedReplyId(replyToEdit.parentId);
         }
     };
 
@@ -236,10 +261,6 @@ export default function PostDetailPage() {
                 }
             ]
         );
-    };
-
-    const handleEditReply = (replyId: number) => {
-        Alert.alert('알림', '댓글 수정 기능이 준비 중입니다.');
     };
 
     useEffect(() => {
@@ -363,9 +384,14 @@ export default function PostDetailPage() {
                 replyText={replyText}
                 onReplyTextChange={setReplyText}
                 selectedReply={getSelectedReplyInfo()}
-                onCancelReply={() => setSelectedReplyId(null)}
+                onCancelReply={() => {
+                    setSelectedReplyId(null);
+                    setEditingReplyId(null);
+                    setReplyText('');
+                }}
                 onSubmitReply={handleSubmitReply}
                 isSubmitting={isSubmitting}
+                isEditing={!!editingReplyId}
             />
         </KeyboardAvoidingView>
     );
