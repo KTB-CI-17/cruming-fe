@@ -1,4 +1,4 @@
-import { API_URL } from '@/api/config';
+import { API_URL } from '@/api/config/index';
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
 
 export function useImageService() {
