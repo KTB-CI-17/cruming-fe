@@ -19,8 +19,8 @@ export default function PostActions({ post, replyCount, onLike, onShare, onReply
                 onPress={onReply}
             >
                 <Ionicons name="chatbubble-outline" size={24} color="#666" />
-                {replyCount > 0 && (
-                    <Text style={styles.actionCount}>{replyCount}</Text>
+                {post.replyCount > 0 && (
+                    <Text style={styles.actionCount}>{post.replyCount}</Text>
                 )}
             </TouchableOpacity>
             <TouchableOpacity

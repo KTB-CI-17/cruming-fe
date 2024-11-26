@@ -29,7 +29,6 @@ export default function PostDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [imagesCache, setImagesCache] = useState<{[key: string]: string}>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const listRef = useRef<FlatList>(null);
     const [totalReplyCount, setTotalReplyCount] = useState(0);
 
@@ -39,7 +38,7 @@ export default function PostDetailPage() {
             const data = await postService.fetchPost(id);
             setPost(data);
             const repliesResponse = await replyActions.fetchReplies();
-            setTotalReplyCount(repliesResponse.totalElements); // 전체 댓글 수 저장
+            setTotalReplyCount(repliesResponse.totalElements);
         } catch (error) {
             setError("게시글을 불러오는데 실패했습니다.");
             Alert.alert("오류", "게시글을 불러오는데 실패했습니다.", [
@@ -172,6 +171,14 @@ export default function PostDetailPage() {
                 await replyActions.updateReply(replyState.editingReplyId, replyState.replyText.trim());
             } else {
                 await replyActions.createReply(replyState.replyText.trim(), replyState.selectedReplyId);
+                setTotalReplyCount(prev => prev + 1);
+                setPost(prevPost => {
+                    if (!prevPost) return null;
+                    return {
+                        ...prevPost,
+                        replyCount: prevPost.replyCount + 1
+                    };
+                });
             }
         } catch (error: any) {
             Alert.alert("오류", error.message || "댓글 작성에 실패했습니다.");
@@ -195,6 +202,7 @@ export default function PostDetailPage() {
         }
     };
 
+
     const handleDeleteReply = async (replyId: number) => {
         Alert.alert(
             '삭제 확인',
@@ -210,6 +218,14 @@ export default function PostDetailPage() {
                     onPress: async () => {
                         try {
                             await replyActions.deleteReply(replyId);
+                            setTotalReplyCount(prev => prev - 1);
+                            setPost(prevPost => {
+                                if (!prevPost) return null;
+                                return {
+                                    ...prevPost,
+                                    replyCount: prevPost.replyCount - 1
+                                };
+                            });
                         } catch (error) {
                             Alert.alert('오류', '댓글 삭제에 실패했습니다.');
                         }
@@ -234,7 +250,7 @@ export default function PostDetailPage() {
         fetchPost();
     }, [id]);
 
-    const renderItem = ({ item, index }: { item: ListItem; index: number }) => {
+    const renderItem = ({ item }: { item: ListItem; index: number }) => {
         if (!post) return null;
 
         if (item.type === 'content') {
@@ -257,7 +273,7 @@ export default function PostDetailPage() {
 
                     <PostActions
                         post={post}
-                        replyCount={replyState.replies.length}
+                        replyCount={totalReplyCount}
                         onLike={handleLike}
                         onShare={handleShare}
                         onReply={scrollToReplies}
@@ -277,7 +293,7 @@ export default function PostDetailPage() {
                 onDeleteReply={handleDeleteReply}
                 onEditReply={handleEditReply}
                 onLoadChildren={replyActions.fetchChildReplies}
-                totalCount={totalReplyCount}
+                totalCount={totalReplyCount} // totalReplyCount를 전달
             />
         );
     };

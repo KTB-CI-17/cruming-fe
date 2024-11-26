@@ -269,8 +269,22 @@ export const useReplyState = (postId: string) => {
     }, [state.replies]);
 
     const deleteReply = useCallback(async (replyId: number) => {
-        const replyToDelete = state.replies.find(r => r.id === replyId);
-        if (!replyToDelete) return;
+        // 상위 댓글과 대댓글 모두에서 찾기
+        const replyToDelete = state.replies.reduce<Reply | undefined>((found, reply) => {
+            if (found) return found;
+            if (reply.id === replyId) return reply;
+            // 대댓글 검색
+            if (reply.children) {
+                const childReply = reply.children.find(child => child.id === replyId);
+                if (childReply) return childReply;
+            }
+            return found;
+        }, undefined);
+
+        if (!replyToDelete) {
+            console.error('Reply not found:', replyId);
+            return;
+        }
 
         dispatch({ type: 'DELETE_REPLY', payload: replyId });
 

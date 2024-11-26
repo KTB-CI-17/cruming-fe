@@ -58,6 +58,7 @@ export interface Post extends BasePost {
     instagram_id?: string;
     isLiked: boolean;
     likeCount: number;
+    replyCount: number;
 }
 
 export interface File {
