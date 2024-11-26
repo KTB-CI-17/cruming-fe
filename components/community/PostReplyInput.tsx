@@ -1,7 +1,14 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Reply } from '@/api/types/community/post';
+import {
+    View,
+    TextInput,
+    TouchableOpacity,
+    Text,
+    StyleSheet,
+    ActivityIndicator,
+    Platform,
+} from 'react-native';
+import { Reply } from '@/api/types/community/reply';
 
 interface PostReplyInputProps {
     replyText: string;
@@ -23,110 +30,121 @@ export default function PostReplyInput({
                                            isEditing,
                                        }: PostReplyInputProps) {
     return (
-        <View style={styles.replyInputContainer}>
+        <View style={styles.container}>
             {(selectedReply || isEditing) && (
                 <View style={styles.replyingToContainer}>
                     <Text style={styles.replyingToText}>
-                        {isEditing ? (
-                            '댓글 수정 중'
-                        ) : (
-                            <>
-                                <Text style={styles.replyingToName}>{selectedReply?.userNickname}</Text>
-                                님에게 답글 작성 중
-                            </>
-                        )}
+                        {isEditing ? '댓글 수정 중' : `${selectedReply?.userNickname}님에게 답글 작성 중`}
                     </Text>
                     <TouchableOpacity
                         onPress={onCancelReply}
-                        style={styles.cancelReplyButton}
+                        hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                     >
-                        <Ionicons name="close-circle" size={20} color="#666" />
+                        <Text style={styles.cancelText}>취소</Text>
                     </TouchableOpacity>
                 </View>
             )}
-            <View style={styles.inputRow}>
+            <View style={styles.inputContainer}>
                 <TextInput
+                    style={styles.input}
+                    placeholder={isEditing ? "댓글을 수정하세요" : selectedReply ? "답글을 입력하세요" : "댓글을 입력하세요"}
                     value={replyText}
                     onChangeText={onReplyTextChange}
-                    placeholder={
-                        isEditing
-                            ? "댓글을 수정하세요..."
-                            : selectedReply
-                                ? "답글을 입력하세요..."
-                                : "댓글을 입력하세요..."
-                    }
-                    style={styles.replyInput}
                     multiline
+                    maxLength={1000}
+                    autoCapitalize="none"
+                    returnKeyType="done"
                 />
-                <TouchableOpacity
-                    style={[
-                        styles.submitButton,
-                        (!replyText.trim() || isSubmitting) && styles.submitButtonDisabled
-                    ]}
-                    onPress={onSubmitReply}
-                    disabled={!replyText.trim() || isSubmitting}
-                >
-                    <Text style={[
-                        styles.submitButtonText,
-                        (!replyText.trim() || isSubmitting) && styles.submitButtonTextDisabled
-                    ]}>
-                        {isEditing ? '수정' : '게시'}
-                    </Text>
-                </TouchableOpacity>
+                {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#007AFF" style={styles.submitButton} />
+                ) : (
+                    <TouchableOpacity
+                        style={[
+                            styles.submitButton,
+                            (!replyText.trim() || isSubmitting) && styles.submitButtonDisabled
+                        ]}
+                        onPress={onSubmitReply}
+                        disabled={!replyText.trim() || isSubmitting}
+                    >
+                        <Text
+                            style={[
+                                styles.submitButtonText,
+                                (!replyText.trim() || isSubmitting) && styles.submitButtonTextDisabled
+                            ]}
+                        >
+                            {isEditing ? '수정' : '작성'}
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    replyInputContainer: {
-        padding: 16,
+    container: {
         borderTopWidth: 1,
         borderTopColor: '#EEEEEE',
         backgroundColor: '#FFFFFF',
+        paddingBottom: Platform.OS === 'ios' ? 20 : 0,
     },
     replyingToContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
-        paddingBottom: 8,
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: '#F8F9FA',
+        borderBottomWidth: 1,
+        borderBottomColor: '#EEEEEE',
     },
     replyingToText: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: 12,
+        color: '#666666',
+        fontWeight: '500',
     },
-    replyingToName: {
-        fontWeight: '600',
-        color: '#000',
+    cancelText: {
+        fontSize: 12,
+        color: '#8E8E8E',
+        fontWeight: '500',
     },
-    cancelReplyButton: {
-        padding: 4,
-    },
-    inputRow: {
+    inputContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-end',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: '#FFFFFF',
     },
-    replyInput: {
+    input: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
-        borderRadius: 8,
-        padding: 12,
-        marginRight: 8,
+        minHeight: 36,
         maxHeight: 100,
+        backgroundColor: '#F8F9FA',
+        borderRadius: 18,
+        paddingHorizontal: 16,
+        paddingTop: 8,
+        paddingBottom: 8,
+        fontSize: 14,
+        lineHeight: 20,
+        color: '#1A1A1A',
     },
     submitButton: {
+        marginLeft: 8,
+        paddingHorizontal: 12,
         paddingVertical: 8,
-        paddingHorizontal: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        minWidth: 48,
     },
     submitButtonDisabled: {
         opacity: 0.5,
     },
     submitButtonText: {
         color: '#007AFF',
-        fontSize: 16,
-        fontWeight: '500',
+        fontSize: 14,
+        fontWeight: '600',
     },
     submitButtonTextDisabled: {
-        color: '#999',
+        color: '#8E8E8E',
     },
 });

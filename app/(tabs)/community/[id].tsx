@@ -8,7 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect, useRef } from 'react';
 import { usePostService } from '@/api/services/community/usePostService';
 import { useImageService } from '@/api/services/community/useImageService';
-import { Post, Reply } from '@/api/types/community/post';
+import { Post } from '@/api/types/community/post';
+import { useReplyState } from '@/hooks/community/useReplyState';
 
 import PostHeader from '@/components/community/PostHeader';
 import PostImageSlider from '@/components/community/PostImageSlider';
@@ -17,6 +18,7 @@ import PostActions from '@/components/community/PostActions';
 import PostReply from '@/components/community/PostReply';
 import PostReplyInput from '@/components/community/PostReplyInput';
 import PostLocation from "@/components/community/PostLocation";
+import {Reply} from "@/api/types/community/reply";
 
 type ListItem = {
     type: 'content' | 'replies';
@@ -29,26 +31,24 @@ export default function PostDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [imagesCache, setImagesCache] = useState<{[key: string]: string}>({});
-    const [replies, setReplies] = useState<Reply[]>([]);
-    const [replyText, setReplyText] = useState('');
-    const [selectedReplyId, setSelectedReplyId] = useState<number | null>(null);
-    const [editingReplyId, setEditingReplyId] = useState<number | null>(null);
-    const [replyPage, setReplyPage] = useState(0);
-    const [hasMoreReplies, setHasMoreReplies] = useState(true);
-    const [loadingReplies, setLoadingReplies] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const listRef = useRef<FlatList>(null);
+
+    const {
+        state: replyState,
+        actions: replyActions
+    } = useReplyState(id);
 
     const postService = usePostService();
     const imageService = useImageService();
 
     const getSelectedReplyInfo = () => {
-        if (!selectedReplyId) return null;
-        return replies.reduce((found: Reply | null, reply) => {
+        if (!replyState.selectedReplyId) return null;
+        return replyState.replies.reduce<Reply | null>((found, reply) => {
             if (found) return found;
-            if (reply.id === selectedReplyId) return reply;
+            if (reply.id === replyState.selectedReplyId) return reply;
             if (reply.children) {
-                const childReply = reply.children.find(child => child.id === selectedReplyId);
+                const childReply = reply.children.find(child => child.id === replyState.selectedReplyId);
                 if (childReply) return childReply;
             }
             return found;
@@ -99,7 +99,7 @@ export default function PostDetailPage() {
             setIsLoading(true);
             const data = await postService.fetchPost(id);
             setPost(data);
-            fetchReplies();
+            await replyActions.fetchReplies();
         } catch (error) {
             setError("게시글을 불러오는데 실패했습니다.");
             Alert.alert("오류", "게시글을 불러오는데 실패했습니다.", [
@@ -130,7 +130,7 @@ export default function PostDetailPage() {
     };
 
     const handleLike = async () => {
-        if (!post) return;
+        if (!post) return false;
 
         try {
             const isLiked = await postService.togglePostLike(post.id);
@@ -142,10 +142,10 @@ export default function PostDetailPage() {
                     likeCount: isLiked ? prevPost.likeCount + 1 : prevPost.likeCount - 1
                 };
             });
-            return isLiked;
+            return isLiked; // boolean 값 반환
         } catch (error) {
             Alert.alert("오류", "좋아요 처리에 실패했습니다.");
-            return false;
+            return false; // 에러 시에도 boolean 반환
         }
     };
 
@@ -164,74 +164,22 @@ export default function PostDetailPage() {
         });
     };
 
-    const fetchReplies = async (page = 0) => {
-        if (loadingReplies || (!hasMoreReplies && page > 0)) return;
-
-        setLoadingReplies(true);
-        try {
-            const data = await postService.fetchReplies(id, page);
-            if (page === 0) {
-                setReplies(data.content);
-            } else {
-                setReplies(prev => [...prev, ...data.content]);
-            }
-            setHasMoreReplies(!data.last);
-            setReplyPage(page);
-        } catch (error) {
-            console.error('Failed to load replies:', error);
-        } finally {
-            setLoadingReplies(false);
-        }
-    };
-
-    const fetchChildReplies = async (parentId: number, page = 0) => {
-        try {
-            const data = await postService.fetchChildReplies(parentId, page);
-
-            setReplies(prev => prev.map(reply => {
-                if (reply.id === parentId) {
-                    const updatedChildren = page === 0
-                        ? data.content
-                        : [...(reply.children || []), ...data.content];
-
-                    return {
-                        ...reply,
-                        children: updatedChildren
-                    };
-                }
-                return reply;
-            }));
-
-            return !data.last;
-        } catch (error) {
-            console.error('Failed to load child replies:', error);
-            return false;
-        }
-    };
-
     const handleSubmitReply = async () => {
-        if (!replyText.trim() || isSubmitting) return;
+        if (!replyState.replyText.trim() || replyState.isSubmitting) return;
 
-        setIsSubmitting(true);
         try {
-            if (editingReplyId) {
-                await postService.updateReply(editingReplyId, replyText.trim());
-                setEditingReplyId(null);
+            if (replyState.editingReplyId) {
+                await replyActions.updateReply(replyState.editingReplyId, replyState.replyText.trim());
             } else {
-                await postService.createReply(id, replyText.trim(), selectedReplyId);
+                await replyActions.createReply(replyState.replyText.trim(), replyState.selectedReplyId);
             }
-            setReplyText('');
-            setSelectedReplyId(null);
-            await fetchReplies(0);
         } catch (error: any) {
             Alert.alert("오류", error.message || "댓글 작성에 실패했습니다.");
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
     const handleEditReply = (replyId: number) => {
-        const replyToEdit = replies.reduce((found: Reply | null, reply) => {
+        const replyToEdit = replyState.replies.reduce<Reply | null>((found, reply) => {
             if (found) return found;
             if (reply.id === replyId) return reply;
             if (reply.children) {
@@ -242,8 +190,8 @@ export default function PostDetailPage() {
         }, null);
 
         if (replyToEdit) {
-            setEditingReplyId(replyId);
-            setReplyText(replyToEdit.content);
+            replyActions.setEditing(replyId);
+            replyActions.setReplyText(replyToEdit.content);
         }
     };
 
@@ -261,8 +209,7 @@ export default function PostDetailPage() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await postService.deleteReply(replyId);
-                            await fetchReplies(0);
+                            await replyActions.deleteReply(replyId);
                         } catch (error) {
                             Alert.alert('오류', '댓글 삭제에 실패했습니다.');
                         }
@@ -287,7 +234,6 @@ export default function PostDetailPage() {
         fetchPost();
     }, [id]);
 
-
     const renderItem = ({ item, index }: { item: ListItem; index: number }) => {
         if (!post) return null;
 
@@ -311,7 +257,7 @@ export default function PostDetailPage() {
 
                     <PostActions
                         post={post}
-                        replyCount={replies.length}
+                        replyCount={replyState.replies.length}
                         onLike={handleLike}
                         onShare={handleShare}
                         onReply={scrollToReplies}
@@ -322,15 +268,15 @@ export default function PostDetailPage() {
 
         return (
             <PostReply
-                replies={replies}
-                onLoadMore={() => fetchReplies(replyPage + 1)}
-                hasMore={hasMoreReplies}
-                loading={loadingReplies}
-                onReply={setSelectedReplyId}
+                replies={replyState.replies}
+                onLoadMore={() => replyActions.fetchReplies(Object.keys(replyState.pageStates).length)}
+                hasMore={!replyState.error}
+                loading={replyState.isSubmitting}
+                onReply={replyActions.selectReply}
                 onProfilePress={navigateToUserProfile}
                 onDeleteReply={handleDeleteReply}
                 onEditReply={handleEditReply}
-                onLoadChildren={fetchChildReplies}
+                onLoadChildren={replyActions.fetchChildReplies}
             />
         );
     };
@@ -391,17 +337,17 @@ export default function PostDetailPage() {
             />
 
             <PostReplyInput
-                replyText={replyText}
-                onReplyTextChange={setReplyText}
+                replyText={replyState.replyText}
+                onReplyTextChange={replyActions.setReplyText}
                 selectedReply={getSelectedReplyInfo()}
                 onCancelReply={() => {
-                    setSelectedReplyId(null);
-                    setEditingReplyId(null);
-                    setReplyText('');
+                    replyActions.selectReply(null);
+                    replyActions.setEditing(null);
+                    replyActions.setReplyText('');
                 }}
                 onSubmitReply={handleSubmitReply}
-                isSubmitting={isSubmitting}
-                isEditing={!!editingReplyId}
+                isSubmitting={replyState.isSubmitting}
+                isEditing={!!replyState.editingReplyId}
             />
         </KeyboardAvoidingView>
     );

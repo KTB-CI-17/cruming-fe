@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Reply } from '@/api/types/community/post';
+import { Reply } from '@/api/types/community/reply';
 
 interface PostReplyProps {
     replies: Reply[];
@@ -26,22 +25,6 @@ export default function PostReply({
                                       onDeleteReply,
                                       onEditReply,
                                   }: PostReplyProps) {
-    const [loadingChildReplies, setLoadingChildReplies] = useState<{[key: number]: boolean}>({});
-    const [childReplyPages, setChildReplyPages] = useState<{[key: number]: number}>({});
-
-    const handleLoadMoreChildren = async (parentId: number) => {
-        if (loadingChildReplies[parentId]) return;
-
-        setLoadingChildReplies(prev => ({ ...prev, [parentId]: true }));
-        try {
-            const nextPage = (childReplyPages[parentId] || 1);
-            await onLoadChildren(parentId, nextPage);
-            setChildReplyPages(prev => ({ ...prev, [parentId]: nextPage + 1 }));
-        } finally {
-            setLoadingChildReplies(prev => ({ ...prev, [parentId]: false }));
-        }
-    };
-
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
@@ -49,7 +32,9 @@ export default function PostReply({
         const diffHours = Math.floor(diffMinutes / 60);
         const diffDays = Math.floor(diffHours / 24);
 
-        if (diffMinutes < 60) {
+        if (diffMinutes < 2) {
+            return '방금 전';
+        } else if (diffMinutes < 60) {
             return `${diffMinutes}분 전`;
         } else if (diffHours < 24) {
             return `${diffHours}시간 전`;
@@ -64,7 +49,6 @@ export default function PostReply({
         if (!reply.children || reply.children.length === 0) return null;
 
         const remainingReplies = reply.childCount - reply.children.length;
-        const isLoading = loadingChildReplies[reply.id];
 
         return (
             <View style={styles.childRepliesContainer}>
@@ -72,16 +56,11 @@ export default function PostReply({
                 {remainingReplies > 0 && (
                     <TouchableOpacity
                         style={styles.viewRepliesButton}
-                        onPress={() => handleLoadMoreChildren(reply.id)}
-                        disabled={isLoading}
+                        onPress={() => onLoadChildren(reply.id, Math.ceil(reply.children!.length / 5))}
                     >
-                        {isLoading ? (
-                            <ActivityIndicator size="small" color="#666" />
-                        ) : (
-                            <Text style={styles.viewRepliesText}>
-                                답글 {remainingReplies}개 더보기
-                            </Text>
-                        )}
+                        <Text style={styles.viewRepliesText}>
+                            답글 {remainingReplies}개 더보기
+                        </Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -160,6 +139,8 @@ export default function PostReply({
                 onEndReached={() => hasMore && onLoadMore()}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={renderFooter}
+                contentContainerStyle={styles.listContainer}
+                showsVerticalScrollIndicator={false}
             />
         </View>
     );
@@ -171,14 +152,19 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: '#EEEEEE',
     },
+    listContainer: {
+        paddingBottom: 20,
+    },
     replyItem: {
         padding: 16,
-        paddingRight: 0,
-        marginRight: 0
+        paddingRight: 16,
+        borderBottomColor: '#EEEEEE',
+    },
+    childReplyItem: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
     },
     childRepliesContainer: {
-        marginLeft: 40,
-        marginRight: 0,
         marginTop: 8,
     },
     replyHeader: {
@@ -203,47 +189,47 @@ const styles = StyleSheet.create({
     },
     replyNickname: {
         fontSize: 14,
-        fontWeight: '500',
+        fontWeight: '600',
+        color: '#1A1A1A',
     },
     replyContent: {
         fontSize: 14,
         lineHeight: 20,
         marginLeft: 40,
+        color: '#1A1A1A',
     },
     replyFooter: {
         flexDirection: 'row',
         alignItems: 'center',
         marginLeft: 40,
-        marginTop: 4,
-        gap: 8,
+        marginTop: 8,
+        justifyContent: 'space-between',
     },
     replyDate: {
         fontSize: 12,
-        color: '#666',
+        color: '#8E8E8E',
     },
     replyActions: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 16,
     },
     replyActionButton: {
         padding: 4,
     },
     replyActionText: {
-        color: '#666',
+        color: '#8E8E8E',
         fontSize: 12,
-    },
-    childReplyItem: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        fontWeight: '500',
     },
     viewRepliesButton: {
-        marginTop: 8,
-        padding: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
     },
     viewRepliesText: {
-        color: '#666',
+        color: '#8E8E8E',
         fontSize: 12,
+        fontWeight: '500',
     },
     loadingFooter: {
         padding: 16,
