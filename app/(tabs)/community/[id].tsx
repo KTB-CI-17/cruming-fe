@@ -1,19 +1,26 @@
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import {
-    View, StyleSheet, ScrollView, Alert, ActivityIndicator,
-    ActionSheetIOS, KeyboardAvoidingView, Platform, TouchableOpacity, Text
+    View, Text, StyleSheet, Alert, ActivityIndicator,
+    ActionSheetIOS, KeyboardAvoidingView, Platform, TouchableOpacity,
+    FlatList
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect, useRef } from 'react';
 import { usePostService } from '@/api/services/community/usePostService';
 import { useImageService } from '@/api/services/community/useImageService';
 import { Post, Reply } from '@/api/types/community/post';
+
 import PostHeader from '@/components/community/PostHeader';
 import PostImageSlider from '@/components/community/PostImageSlider';
 import PostContent from '@/components/community/PostContent';
 import PostActions from '@/components/community/PostActions';
 import PostReply from '@/components/community/PostReply';
 import PostReplyInput from '@/components/community/PostReplyInput';
+import PostLocation from "@/components/community/PostLocation";
+
+type ListItem = {
+    type: 'content' | 'replies';
+};
 
 export default function PostDetailPage() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,7 +36,7 @@ export default function PostDetailPage() {
     const [hasMoreReplies, setHasMoreReplies] = useState(true);
     const [loadingReplies, setLoadingReplies] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const scrollViewRef = useRef<ScrollView>(null);
+    const listRef = useRef<FlatList>(null);
 
     const postService = usePostService();
     const imageService = useImageService();
@@ -138,6 +145,13 @@ export default function PostDetailPage() {
         }
     };
 
+    const scrollToReplies = () => {
+        listRef.current?.scrollToIndex({
+            index: 1,
+            animated: true,
+        });
+    };
+
     const fetchReplies = async (page = 0) => {
         if (loadingReplies || (!hasMoreReplies && page > 0)) return;
 
@@ -155,6 +169,31 @@ export default function PostDetailPage() {
             console.error('Failed to load replies:', error);
         } finally {
             setLoadingReplies(false);
+        }
+    };
+
+    const fetchChildReplies = async (parentId: number, page = 0) => {
+        try {
+            const data = await postService.fetchChildReplies(parentId, page);
+
+            setReplies(prev => prev.map(reply => {
+                if (reply.id === parentId) {
+                    const updatedChildren = page === 0
+                        ? data.content
+                        : [...(reply.children || []), ...data.content];
+
+                    return {
+                        ...reply,
+                        children: updatedChildren
+                    };
+                }
+                return reply;
+            }));
+
+            return !data.last;
+        } catch (error) {
+            console.error('Failed to load child replies:', error);
+            return false;
         }
     };
 
@@ -199,31 +238,6 @@ export default function PostDetailPage() {
         );
     };
 
-    const fetchChildReplies = async (parentId: number, page = 0) => {
-        try {
-            const data = await postService.fetchChildReplies(parentId, page);
-
-            setReplies(prev => prev.map(reply => {
-                if (reply.id === parentId) {
-                    const updatedChildren = page === 0
-                        ? data.content
-                        : [...(reply.children || []), ...data.content];
-
-                    return {
-                        ...reply,
-                        children: updatedChildren
-                    };
-                }
-                return reply;
-            }));
-
-            return !data.last;
-        } catch (error) {
-            console.error('Failed to load child replies:', error);
-            return false;
-        }
-    };
-
     const handleEditReply = (replyId: number) => {
         Alert.alert('알림', '댓글 수정 기능이 준비 중입니다.');
     };
@@ -243,6 +257,53 @@ export default function PostDetailPage() {
         fetchPost();
     }, [id]);
 
+    const renderItem = ({ item, index }: { item: ListItem; index: number }) => {
+        if (!post) return null;
+
+        if (item.type === 'content') {
+            return (
+                <>
+                    <PostHeader
+                        post={post}
+                        onProfilePress={navigateToUserProfile}
+                        onMorePress={showActionSheet}
+                    />
+
+                    <PostContent post={post} />
+
+                    <PostImageSlider
+                        files={post.files}
+                        imagesCache={imagesCache}
+                        currentImageIndex={currentImageIndex}
+                        onImageIndexChange={setCurrentImageIndex}
+                    />
+
+                    <PostActions
+                        post={post}
+                        replyCount={replies.length}
+                        onLike={() => handleLike(post.id)}
+                        onShare={handleShare}
+                        onReply={scrollToReplies}
+                    />
+                </>
+            );
+        }
+
+        return (
+            <PostReply
+                replies={replies}
+                onLoadMore={() => fetchReplies(replyPage + 1)}
+                hasMore={hasMoreReplies}
+                loading={loadingReplies}
+                onReply={setSelectedReplyId}
+                onProfilePress={navigateToUserProfile}
+                onDeleteReply={handleDeleteReply}
+                onEditReply={handleEditReply}
+                onLoadChildren={fetchChildReplies}
+            />
+        );
+    };
+
     if (isLoading) {
         return (
             <View style={styles.centerContainer}>
@@ -260,6 +321,11 @@ export default function PostDetailPage() {
             </View>
         );
     }
+
+    const listData: ListItem[] = [
+        { type: 'content' },
+        { type: 'replies' }
+    ];
 
     return (
         <KeyboardAvoidingView
@@ -279,41 +345,19 @@ export default function PostDetailPage() {
                 }}
             />
 
-            <ScrollView style={styles.container}>
-                <PostHeader
-                    post={post}
-                    onProfilePress={navigateToUserProfile}
-                    onMorePress={showActionSheet}
-                />
-
-                <PostContent post={post} />
-
-                <PostImageSlider
-                    files={post.files}
-                    imagesCache={imagesCache}
-                    currentImageIndex={currentImageIndex}  // 추가: currentImageIndex 전달
-                    onImageIndexChange={setCurrentImageIndex}
-                />
-
-                <PostActions
-                    post={post}
-                    replyCount={replies.length}
-                    onLike={() => handleLike(post.id)}
-                    onShare={handleShare}
-                    onReply={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-                />
-
-                <PostReply
-                    replies={replies}
-                    onLoadMore={() => fetchReplies(replyPage + 1)}
-                    hasMore={hasMoreReplies}
-                    loading={loadingReplies}
-                    onReply={setSelectedReplyId}
-                    onProfilePress={navigateToUserProfile}
-                    onDeleteReply={handleDeleteReply}
-                    onEditReply={handleEditReply}
-                    onLoadChildren={fetchChildReplies}/>
-            </ScrollView>
+            <FlatList
+                ref={listRef}
+                data={listData}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.type}
+                style={styles.container}
+                onScrollToIndexFailed={(info) => {
+                    const wait = new Promise(resolve => setTimeout(resolve, 500));
+                    wait.then(() => {
+                        listRef.current?.scrollToIndex({ index: info.index, animated: true });
+                    });
+                }}
+            />
 
             <PostReplyInput
                 replyText={replyText}
@@ -331,6 +375,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
+    },
+    contentContainer: {
+        borderBottomWidth: 0,
     },
     centerContainer: {
         flex: 1,

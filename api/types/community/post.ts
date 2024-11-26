@@ -46,8 +46,8 @@ export interface PostListParams {
 
 export interface Post extends BasePost {
     content: string;
-    location: string;
-    level: number;
+    location?: string;
+    level?: string;
     category: string;
     visibility: string;
     userId: number;

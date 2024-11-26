@@ -7,18 +7,18 @@ const { width } = Dimensions.get('window');
 interface PostImageSliderProps {
     files: File[];
     imagesCache: { [key: string]: string };
-    currentImageIndex: number;  // 수정: prop으로 받도록 변경
+    currentImageIndex: number;
     onImageIndexChange: (index: number) => void;
 }
 
 export default function PostImageSlider({
                                             files,
                                             imagesCache,
-                                            currentImageIndex,  // 수정: prop으로 받아서 사용
+                                            currentImageIndex,
                                             onImageIndexChange
                                         }: PostImageSliderProps) {
     return (
-        <>
+        <View style={styles.container}>
             <ScrollView
                 horizontal
                 pagingEnabled
@@ -48,17 +48,21 @@ export default function PostImageSlider({
                             key={index}
                             style={[
                                 styles.paginationDot,
-                                currentImageIndex === index && styles.paginationDotActive  // 수정: prop으로 받은 값 사용
+                                currentImageIndex === index && styles.paginationDotActive
                             ]}
                         />
                     ))}
                 </View>
             )}
-        </>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    container: {
+        borderBottomWidth: 0,
+        marginBottom: 30
+    },
     imageContainer: {
         width: width,
         height: width,

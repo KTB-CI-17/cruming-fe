@@ -1,17 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, ActionSheetIOS, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-interface Reply {
-    id: number;
-    content: string;
-    createdAt: string;
-    userId: number;
-    userNickname: string;
-    childCount: number;
-    children?: Reply[];
-    isWriter?: boolean;
-}
+import { Reply } from '@/api/types/community/post';
 
 interface PostReplyProps {
     replies: Reply[];
@@ -39,29 +29,11 @@ export default function PostReply({
     const [loadingChildReplies, setLoadingChildReplies] = useState<{[key: number]: boolean}>({});
     const [childReplyPages, setChildReplyPages] = useState<{[key: number]: number}>({});
 
-    const showActionSheet = (reply: Reply) => {
-        ActionSheetIOS.showActionSheetWithOptions(
-            {
-                options: ['수정', '삭제', '취소'],
-                cancelButtonIndex: 2,
-                destructiveButtonIndex: 1,
-            },
-            (buttonIndex) => {
-                if (buttonIndex === 0) {
-                    onEditReply(reply.id);
-                } else if (buttonIndex === 1) {
-                    onDeleteReply(reply.id);
-                }
-            }
-        );
-    };
-
     const handleLoadMoreChildren = async (parentId: number) => {
         if (loadingChildReplies[parentId]) return;
 
         setLoadingChildReplies(prev => ({ ...prev, [parentId]: true }));
         try {
-            // 페이지는 1부터 시작 (첫 5개는 이미 로드되어 있음)
             const nextPage = (childReplyPages[parentId] || 1);
             await onLoadChildren(parentId, nextPage);
             setChildReplyPages(prev => ({ ...prev, [parentId]: nextPage + 1 }));
@@ -88,50 +60,6 @@ export default function PostReply({
         }
     };
 
-    const renderReplyItem = (reply: Reply, isChild: boolean = false) => (
-        <View key={reply.id} style={[styles.replyItem, isChild && styles.childReplyItem]}>
-            <View style={styles.replyHeader}>
-                <TouchableOpacity
-                    style={styles.profileContainer}
-                    onPress={() => onProfilePress(reply.userId)}
-                >
-                    <Image
-                        source={require('@/assets/images/default-profile.png')}
-                        style={styles.replyProfileImage}
-                    />
-                    <View style={styles.replyInfo}>
-                        <Text style={styles.replyNickname}>
-                            {reply.userNickname}
-                        </Text>
-                    </View>
-                </TouchableOpacity>
-
-                {reply.isWriter && (
-                    <TouchableOpacity
-                        onPress={() => showActionSheet(reply)}
-                        style={styles.moreButton}
-                    >
-                        <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
-                    </TouchableOpacity>
-                )}
-            </View>
-
-            <Text style={styles.replyContent}>{reply.content}</Text>
-
-            <View style={styles.replyFooter}>
-                <Text style={styles.replyDate}>{formatDate(reply.createdAt)}</Text>
-                {!isChild && (
-                    <TouchableOpacity
-                        style={styles.replyActionButton}
-                        onPress={() => onReply(reply.id)}
-                    >
-                        <Text style={styles.replyActionText}>답글</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-        </View>
-    );
-
     const renderChildReplies = (reply: Reply) => {
         if (!reply.children || reply.children.length === 0) return null;
 
@@ -140,7 +68,7 @@ export default function PostReply({
 
         return (
             <View style={styles.childRepliesContainer}>
-                {reply.children.map(child => renderReplyItem(child, true))}
+                {reply.children.map(child => renderReplyItem({ item: child, isChild: true }))}
                 {remainingReplies > 0 && (
                     <TouchableOpacity
                         style={styles.viewRepliesButton}
@@ -160,39 +88,98 @@ export default function PostReply({
         );
     };
 
+    const renderReplyItem = ({ item, isChild = false }: { item: Reply; isChild?: boolean }) => (
+        <View key={item.id} style={[styles.replyItem, isChild && styles.childReplyItem]}>
+            <View style={styles.replyHeader}>
+                <TouchableOpacity
+                    style={styles.profileContainer}
+                    onPress={() => onProfilePress(item.userId)}
+                >
+                    <Image
+                        source={require('@/assets/images/default-profile.png')}
+                        style={styles.replyProfileImage}
+                    />
+                    <View style={styles.replyInfo}>
+                        <Text style={styles.replyNickname}>
+                            {item.userNickname}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+            </View>
+
+            <Text style={styles.replyContent}>{item.content}</Text>
+
+            <View style={styles.replyFooter}>
+                <Text style={styles.replyDate}>{formatDate(item.createdAt)}</Text>
+                <View style={styles.replyActions}>
+                    {!isChild && (
+                        <TouchableOpacity
+                            style={styles.replyActionButton}
+                            onPress={() => onReply(item.id)}
+                        >
+                            <Text style={styles.replyActionText}>답글</Text>
+                        </TouchableOpacity>
+                    )}
+                    {item.isWriter && (
+                        <>
+                            <TouchableOpacity
+                                style={styles.replyActionButton}
+                                onPress={() => onEditReply(item.id)}
+                            >
+                                <Text style={styles.replyActionText}>수정</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.replyActionButton}
+                                onPress={() => onDeleteReply(item.id)}
+                            >
+                                <Text style={styles.replyActionText}>삭제</Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
+                </View>
+            </View>
+            {!isChild && renderChildReplies(item)}
+        </View>
+    );
+
+    const renderFooter = () => {
+        if (!loading) return null;
+        return (
+            <View style={styles.loadingFooter}>
+                <ActivityIndicator size="small" color="#666" />
+            </View>
+        );
+    };
+
     return (
         <View style={styles.container}>
-            {replies.map((reply) => (
-                <View key={reply.id}>
-                    {renderReplyItem(reply)}
-                    {renderChildReplies(reply)}
-                </View>
-            ))}
-
-            {hasMore && !loading && (
-                <TouchableOpacity
-                    style={styles.loadMoreButton}
-                    onPress={onLoadMore}
-                >
-                    <Text style={styles.loadMoreText}>더보기</Text>
-                </TouchableOpacity>
-            )}
+            <FlatList
+                data={replies}
+                renderItem={renderReplyItem}
+                keyExtractor={(item) => item.id.toString()}
+                onEndReached={() => hasMore && onLoadMore()}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={renderFooter}
+            />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        padding: 16,
+        flex: 1,
         borderTopWidth: 1,
         borderTopColor: '#EEEEEE',
     },
     replyItem: {
-        marginBottom: 16,
+        padding: 16,
+        paddingRight: 0,
+        marginRight: 0
     },
     childRepliesContainer: {
         marginLeft: 40,
-        marginBottom: 16,
+        marginRight: 0,
+        marginTop: 8,
     },
     replyHeader: {
         flexDirection: 'row',
@@ -214,13 +201,6 @@ const styles = StyleSheet.create({
     replyInfo: {
         flex: 1,
     },
-    replyActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    moreButton: {
-        padding: 8,
-    },
     replyNickname: {
         fontSize: 14,
         fontWeight: '500',
@@ -241,6 +221,11 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#666',
     },
+    replyActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
     replyActionButton: {
         padding: 4,
     },
@@ -249,7 +234,8 @@ const styles = StyleSheet.create({
         fontSize: 12,
     },
     childReplyItem: {
-        marginBottom: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
     },
     viewRepliesButton: {
         marginTop: 8,
@@ -259,12 +245,8 @@ const styles = StyleSheet.create({
         color: '#666',
         fontSize: 12,
     },
-    loadMoreButton: {
-        alignItems: 'center',
+    loadingFooter: {
         padding: 16,
-    },
-    loadMoreText: {
-        color: '#666',
-        fontSize: 14,
+        alignItems: 'center',
     },
 });
