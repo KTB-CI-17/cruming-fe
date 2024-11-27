@@ -1,54 +1,69 @@
-import React from 'react';
-import { View, ScrollView, Image, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, ScrollView, Dimensions, StyleSheet } from 'react-native';
 import { File } from '@/api/types/community/post';
+import ImageBase from "@/components/image/ImageBase";
 
 const { width } = Dimensions.get('window');
 
 interface PostImageSliderProps {
     files: File[];
     imagesCache: { [key: string]: string };
-    currentImageIndex: number;
     onImageIndexChange: (index: number) => void;
 }
 
 export default function PostImageSlider({
                                             files,
                                             imagesCache,
-                                            currentImageIndex,
                                             onImageIndexChange
                                         }: PostImageSliderProps) {
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    // 이미지나 캐시가 없으면 렌더링하지 않음
+    if (files.length === 0) return null;
+
+    const cachedImages = files
+        .map(file => imagesCache[file.url])
+        .filter((url): url is string => url != null);
+
+    if (cachedImages.length === 0) return null;
+
+    const handleScroll = (event: any) => {
+        const offsetX = event.nativeEvent.contentOffset.x;
+        const index = Math.round(offsetX / width);
+        if (currentIndex !== index) {
+            setCurrentIndex(index);
+            onImageIndexChange(index);
+        }
+    };
+
     return (
         <View style={styles.container}>
             <ScrollView
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
-                onScroll={e => {
-                    const offsetX = e.nativeEvent.contentOffset.x;
-                    const index = Math.round(offsetX / width);
-                    onImageIndexChange(index);
-                }}
+                onScroll={handleScroll}
                 scrollEventThrottle={16}
             >
-                {files.map((file) => (
-                    <View key={file.id} style={styles.imageContainer}>
-                        {imagesCache[file.url] ? (
-                            <Image source={{ uri: imagesCache[file.url] }} style={styles.image} />
-                        ) : (
-                            <ActivityIndicator style={styles.image} />
-                        )}
+                {cachedImages.map((uri, index) => (
+                    <View key={index} style={styles.imageContainer}>
+                        <ImageBase
+                            source={{ uri }}
+                            style={styles.image}
+                            resizeMode="contain"
+                        />
                     </View>
                 ))}
             </ScrollView>
 
-            {files.length > 1 && (
+            {cachedImages.length > 1 && (
                 <View style={styles.pagination}>
-                    {files.map((_, index) => (
+                    {cachedImages.map((_, index) => (
                         <View
                             key={index}
                             style={[
                                 styles.paginationDot,
-                                currentImageIndex === index && styles.paginationDotActive
+                                currentIndex === index && styles.paginationDotActive
                             ]}
                         />
                     ))}
@@ -60,7 +75,8 @@ export default function PostImageSlider({
 
 const styles = StyleSheet.create({
     container: {
-        borderBottomWidth: 0,
+        width: '100%',
+        height: width,
         marginBottom: 30
     },
     imageContainer: {
@@ -70,14 +86,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     image: {
-        width: width,
-        height: width,
+        width: '100%',
+        height: '100%',
     },
     pagination: {
         flexDirection: 'row',
         justifyContent: 'center',
+        alignItems: 'center',
+        position: 'absolute',
+        bottom: 16,
+        left: 0,
+        right: 0,
         gap: 6,
-        marginTop: 8,
     },
     paginationDot: {
         width: 6,

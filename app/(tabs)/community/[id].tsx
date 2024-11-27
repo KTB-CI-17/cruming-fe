@@ -267,7 +267,6 @@ export default function PostDetailPage() {
                     <PostImageSlider
                         files={post.files}
                         imagesCache={imagesCache}
-                        currentImageIndex={currentImageIndex}
                         onImageIndexChange={setCurrentImageIndex}
                     />
 
